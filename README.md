@@ -1,6 +1,6 @@
 # Fakex
 
-```
+```elixir
 setup do
   Fakex.Behavior.create(:error, status_code: 400, body: ~s<"error": "bad request">)
   Fakex.Behavior.create(:success, status_code: 200, body: ~s<"user": {"name": "John", "age": 25}>)
