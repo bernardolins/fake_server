@@ -29,7 +29,7 @@ defmodule Fakex.BehaviorTest do
   test "#create put a new behavior on the list" do
     Fakex.Behavior.begin
     assert Agent.get(Fakex.Behavior, fn(list) -> list end) == []
-    Fakex.Behavior.create(:test, @valid_behavior) == {:error, :response_code_not_provided}
+    assert Fakex.Behavior.create(:test, @valid_behavior) == :ok
     assert Agent.get(Fakex.Behavior, fn(list) -> list end) == [test: @valid_behavior]
     Agent.stop(Fakex.Behavior)
   end
