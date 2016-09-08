@@ -18,4 +18,8 @@ defmodule Fakex.Behavior do
   def create(_behavior) do
     {:error, :name_not_provided}
   end
+
+  def get do
+    Agent.get(__MODULE__, fn(behavior_list) -> behavior_list end)
+  end
 end
