@@ -10,6 +10,15 @@ defmodule Fakex.BehaviorTest do
     Agent.stop(Fakex.Behavior)
   end
 
+  test "#stop return error if agent not started" do
+    assert Fakex.Behavior.stop == {:error, :not_started}
+  end
+
+  test "#stop return :ok if agent is correctly stoped" do
+    Fakex.Behavior.begin
+    assert Fakex.Behavior.stop == :ok
+  end
+
   test "#create return error if name is not atom" do
     assert Fakex.Behavior.create("some_invalid_name", @valid_behavior) == {:error, :invalid_name}
   end
@@ -31,39 +40,39 @@ defmodule Fakex.BehaviorTest do
     assert Agent.get(Fakex.Behavior, fn(list) -> list end) == []
     assert Fakex.Behavior.create(:test, @valid_behavior) == :ok
     assert Agent.get(Fakex.Behavior, fn(list) -> list end) == [test: @valid_behavior]
-    Agent.stop(Fakex.Behavior)
+    Fakex.Behavior.stop
   end
 
   test "#get returns all behaviors" do
     Fakex.Behavior.begin
     Fakex.Behavior.create(:test, @valid_behavior)
     assert Fakex.Behavior.get == {:ok, [test: @valid_behavior]}
-    Agent.stop(Fakex.Behavior)
+    Fakex.Behavior.stop
   end
 
   test "#get returns an empty list if there are no behaviors" do
     Fakex.Behavior.begin
     assert Fakex.Behavior.get == {:ok, []}
-    Agent.stop(Fakex.Behavior)
+    Fakex.Behavior.stop
   end
 
   test "#get(name) returns behaviors by name" do
     Fakex.Behavior.begin
     Fakex.Behavior.create(:test, @valid_behavior)
     assert Fakex.Behavior.get(:test) == {:ok, @valid_behavior}
-    Agent.stop(Fakex.Behavior)
+    Fakex.Behavior.stop
   end
 
   test "#get(name) returns not found error if there are no behaviors with that name" do
     Fakex.Behavior.begin
     Fakex.Behavior.create(:test, @valid_behavior)
     assert Fakex.Behavior.get(:test2) == {:error, :not_found}
-    Agent.stop(Fakex.Behavior)
+    Fakex.Behavior.stop
   end
 
   test "#get(name) returns not found error if there are no behaviors at all" do
     Fakex.Behavior.begin
     assert Fakex.Behavior.get(:test) == {:error, :not_found}
-    Agent.stop(Fakex.Behavior)
+    Fakex.Behavior.stop
   end
 end

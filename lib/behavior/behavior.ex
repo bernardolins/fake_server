@@ -3,6 +3,13 @@ defmodule Fakex.Behavior do
     Agent.start_link(fn -> [] end, name: __MODULE__)
   end
 
+  def stop do
+    case Process.whereis(__MODULE__) do
+      nil -> {:error, :not_started}
+      _ -> Agent.stop(__MODULE__)
+    end
+  end
+
   def create(name, behavior = %{response_code: _code, response_body: _body}) do
     case is_atom name do
       true -> Agent.update(__MODULE__, fn(behavior_list) -> Keyword.put(behavior_list, name, behavior) end)
