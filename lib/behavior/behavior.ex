@@ -9,10 +9,10 @@ defmodule Fakex.Behavior do
       false -> {:error, :invalid_name}
     end
   end
-  def create(name, %{response_body: _body}) do
+  def create(_name, %{response_body: _body}) do
     {:error, :response_code_not_provided}
   end
-  def create(name, %{response_code: _code}) do
+  def create(_name, %{response_code: _code}) do
     {:error, :response_body_not_provided}
   end
   def create(_behavior) do
