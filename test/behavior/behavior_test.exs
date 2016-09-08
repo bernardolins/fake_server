@@ -37,13 +37,33 @@ defmodule Fakex.BehaviorTest do
   test "#get returns all behaviors" do
     Fakex.Behavior.begin
     Fakex.Behavior.create(:test, @valid_behavior)
-    assert Fakex.Behavior.get == [test: @valid_behavior]
+    assert Fakex.Behavior.get == {:ok, [test: @valid_behavior]}
     Agent.stop(Fakex.Behavior)
   end
 
   test "#get returns an empty list if there are no behaviors" do
     Fakex.Behavior.begin
-    assert Fakex.Behavior.get == []
+    assert Fakex.Behavior.get == {:ok, []}
+    Agent.stop(Fakex.Behavior)
+  end
+
+  test "#get(name) returns behaviors by name" do
+    Fakex.Behavior.begin
+    Fakex.Behavior.create(:test, @valid_behavior)
+    assert Fakex.Behavior.get(:test) == {:ok, @valid_behavior}
+    Agent.stop(Fakex.Behavior)
+  end
+
+  test "#get(name) returns not found error if there are no behaviors with that name" do
+    Fakex.Behavior.begin
+    Fakex.Behavior.create(:test, @valid_behavior)
+    assert Fakex.Behavior.get(:test2) == {:error, :not_found}
+    Agent.stop(Fakex.Behavior)
+  end
+
+  test "#get(name) returns not found error if there are no behaviors at all" do
+    Fakex.Behavior.begin
+    assert Fakex.Behavior.get(:test) == {:error, :not_found}
     Agent.stop(Fakex.Behavior)
   end
 end

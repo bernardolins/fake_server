@@ -20,6 +20,14 @@ defmodule Fakex.Behavior do
   end
 
   def get do
-    Agent.get(__MODULE__, fn(behavior_list) -> behavior_list end)
+    {:ok, Agent.get(__MODULE__, fn(behavior_list) -> behavior_list end)}
+  end
+
+  def get(name) do
+    behavior = Agent.get(__MODULE__, fn(behavior_list) -> Keyword.get(behavior_list, name) end)
+    case behavior do
+      nil -> {:error, :not_found}
+      _ -> {:ok, behavior}
+    end
   end
 end
