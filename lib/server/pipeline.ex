@@ -6,6 +6,15 @@ defmodule Fakex.Pipeline do
     |> validate_pipeline(behavior_list)
   end 
 
+  def next_response(name) do
+    case Agent.get(name, fn(behavior_list) -> List.first(behavior_list) end) do
+      nil -> {:ok, :pipeline_empty}
+      response -> 
+        update_pipeline(name)
+        {:ok, response}
+    end
+  end
+
   defp validate_name name do
     case is_atom name do
       true -> name
@@ -31,10 +40,17 @@ defmodule Fakex.Pipeline do
   end
 
   defp create_pipeline(name, behavior_list) do
-    case Agent.start_link(fn -> {0, behavior_list} end, name: name) do
+    case Agent.start_link(fn -> behavior_list end, name: name) do
       {:ok, _} -> :ok
       {:error, {:already_started, _}} -> {:error, :already_exists}
       _ -> {:error, :unknown_error}
     end
+  end
+
+  defp update_pipeline(name) do
+     Agent.update(name, fn(behavior_list) ->
+      [_|remaining_behaviors] = behavior_list
+      remaining_behaviors
+    end)
   end
 end
