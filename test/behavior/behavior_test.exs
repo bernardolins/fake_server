@@ -4,9 +4,15 @@ defmodule Fakex.BehaviorTest do
 
   @valid_behavior %{response_body: "\"user\": \"test\"", response_code: 200}
 
-  test "#begin start a new agent with module name and empty Keyword list" do
-    Fakex.Behavior.begin
+  test "#begin returns :ok and start a new agent with module name and empty Keyword list" do
+    assert Fakex.Behavior.begin == :ok
     assert Agent.get(Fakex.Behavior, fn(list) -> list end) == []
+    Agent.stop(Fakex.Behavior)
+  end
+
+  test "#begin returns error if server already exists" do
+    Fakex.Behavior.begin
+    assert Fakex.Behavior.begin == {:error, :already_started}
     Agent.stop(Fakex.Behavior)
   end
 

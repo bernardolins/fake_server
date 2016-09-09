@@ -1,6 +1,10 @@
 defmodule Fakex.Behavior do
   def begin do
-    Agent.start_link(fn -> [] end, name: __MODULE__)
+    case Agent.start_link(fn -> [] end, name: __MODULE__) do
+      {:ok, _} -> :ok
+      {:error, {:already_started, _}} -> {:error, :already_started}
+      _ -> {:error, :unknown_error}
+    end
   end
 
   def stop do
