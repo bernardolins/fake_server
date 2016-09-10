@@ -1,4 +1,4 @@
-defmodule FakexTest do
+defmodule Fakex.PipelineTest do
   use ExUnit.Case
   doctest Fakex
 
