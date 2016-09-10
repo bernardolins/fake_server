@@ -6,7 +6,6 @@ defmodule Fakex.BehaviorTest do
   @invalid_action_list [:status_200, :status_400, :invalid]
 
   setup_all do
-    Fakex.Action.begin
     Fakex.Action.create(:status_200, %{response_code: 200, response_body: ~s<"user": "Test", "age": 25>})
     Fakex.Action.create(:status_400, %{response_code: 400, response_body: ~s<"error": "bad request">})
     Fakex.Action.create(:timeout, %{response_code: 408, response_body: ~s<"error": "request timeout">})
