@@ -4,11 +4,11 @@
 
 ```elixir
 setup do
-  Fakex.Behavior.create(:error, status_code: 400, body: ~s<"error": "bad request">)
-  Fakex.Behavior.create(:success, status_code: 200, body: ~s<"user": {"name": "John", "age": 25}>)
+  Fakex.Action.create(:status_400, status_code: 400, body: ~s<"error": "bad request">)
+  Fakex.Action.create(:status_200, status_code: 200, body: ~s<"user": {"name": "John", "age": 25}>)
   
-  server = Fakex.start([:400, :200])
-  {:ok, server}
+  Fakex.Behavior.create(:my_server, [:400, :200])
+  :ok
 end
 
 test "retry when 400" do
