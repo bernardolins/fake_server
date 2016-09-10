@@ -2,83 +2,52 @@ defmodule Fakex.BehaviorTest do
   use ExUnit.Case
   doctest Fakex
 
-  @valid_behavior %{response_body: "\"user\": \"test\"", response_code: 200}
+  @valid_action_list [:status_200, :status_400, :timeout]
+  @invalid_action_list [:status_200, :status_400, :invalid]
 
-  test "#begin returns :ok and start a new agent with module name and empty Keyword list" do
-    assert Fakex.Behavior.begin == :ok
-    assert Agent.get(Fakex.Behavior, fn(list) -> list end) == []
-    Agent.stop(Fakex.Behavior)
+  setup_all do
+    Fakex.Action.begin
+    Fakex.Action.create(:status_200, %{response_code: 200, response_body: ~s<"user": "Test", "age": 25>})
+    Fakex.Action.create(:status_400, %{response_code: 400, response_body: ~s<"error": "bad request">})
+    Fakex.Action.create(:timeout, %{response_code: 408, response_body: ~s<"error": "request timeout">})
+    :ok
   end
 
-  test "#begin returns error if server already exists" do
-    Fakex.Behavior.begin
-    assert Fakex.Behavior.begin == {:error, :already_started}
-    Agent.stop(Fakex.Behavior)
+  test "#create creates a new behavior with given actions and current number of calls" do
+    assert Fakex.Behavior.create(:test_behavior, @valid_action_list) == :ok
+    assert Agent.get(:test_behavior, fn(list) -> list end) == @valid_action_list
+    Agent.stop(:test_behavior)
   end
 
-  test "#stop return error if agent not started" do
-    assert Fakex.Behavior.stop == {:error, :not_started}
+  test "#create returns error if no actions are provided" do
+    assert Fakex.Behavior.create(:test_behavior, []) == {:error, :no_action}
   end
 
-  test "#stop return :ok if agent is correctly stoped" do
-    Fakex.Behavior.begin
-    assert Fakex.Behavior.stop == :ok
+  test "#create returns error on the first invalid action" do
+    assert Fakex.Behavior.create(:test_behavior, @invalid_action_list) == {:error, {:invalid_action, :invalid}}
   end
 
-  test "#create return error if name is not atom" do
-    assert Fakex.Behavior.create("some_invalid_name", @valid_behavior) == {:error, :invalid_name}
+  test "#create returns error when name already exists" do
+    Fakex.Behavior.create(:test_behavior, @valid_action_list)
+    assert Fakex.Behavior.create(:test_behavior, @valid_action_list) == {:error, :already_exists}
   end
 
-  test "#create returns error if name not provided" do
-    assert Fakex.Behavior.create(@valid_behavior) == {:error, :name_not_provided}
+  test "#create returns error when name is not an atom" do
+    assert Fakex.Behavior.create("test_behavior", @invalid_action_list) == {:error, :invalid_name}
   end
 
-  test "#create returns error if response_body not provided" do
-    assert Fakex.Behavior.create(:test, %{response_code: 200}) == {:error, :response_body_not_provided}
+  test "#next_response returns the next response if there is one available" do
+    Fakex.Behavior.create(:test_behavior, @valid_action_list)
+    assert Fakex.Behavior.next_response(:test_behavior) == {:ok, :status_200}
+    assert Fakex.Behavior.next_response(:test_behavior) == {:ok, :status_400}
+    assert Fakex.Behavior.next_response(:test_behavior) == {:ok, :timeout}
   end
 
-  test "#create returns error if response_code not provided" do
-    assert Fakex.Behavior.create(:test, %{response_body: ~s<"user": "test">}) == {:error, :response_code_not_provided}
-  end
-
-  test "#create put a new behavior on the list" do
-    Fakex.Behavior.begin
-    assert Agent.get(Fakex.Behavior, fn(list) -> list end) == []
-    assert Fakex.Behavior.create(:test, @valid_behavior) == :ok
-    assert Agent.get(Fakex.Behavior, fn(list) -> list end) == [test: @valid_behavior]
-    Fakex.Behavior.stop
-  end
-
-  test "#get returns all behaviors" do
-    Fakex.Behavior.begin
-    Fakex.Behavior.create(:test, @valid_behavior)
-    assert Fakex.Behavior.get == {:ok, [test: @valid_behavior]}
-    Fakex.Behavior.stop
-  end
-
-  test "#get returns an empty list if there are no behaviors" do
-    Fakex.Behavior.begin
-    assert Fakex.Behavior.get == {:ok, []}
-    Fakex.Behavior.stop
-  end
-
-  test "#get(name) returns behaviors by name" do
-    Fakex.Behavior.begin
-    Fakex.Behavior.create(:test, @valid_behavior)
-    assert Fakex.Behavior.get(:test) == {:ok, @valid_behavior}
-    Fakex.Behavior.stop
-  end
-
-  test "#get(name) returns not found error if there are no behaviors with that name" do
-    Fakex.Behavior.begin
-    Fakex.Behavior.create(:test, @valid_behavior)
-    assert Fakex.Behavior.get(:test2) == {:error, :not_found}
-    Fakex.Behavior.stop
-  end
-
-  test "#get(name) returns not found error if there are no behaviors at all" do
-    Fakex.Behavior.begin
-    assert Fakex.Behavior.get(:test) == {:error, :not_found}
-    Fakex.Behavior.stop
+  test "#next_response returns behavior_empty if there is no more actions on behavior list" do
+    Fakex.Behavior.create(:test_behavior, @valid_action_list)
+    Fakex.Behavior.next_response(:test_behavior)
+    Fakex.Behavior.next_response(:test_behavior)
+    Fakex.Behavior.next_response(:test_behavior)
+    assert Fakex.Behavior.next_response(:test_behavior) == {:ok, :no_more_actions}
   end
 end
