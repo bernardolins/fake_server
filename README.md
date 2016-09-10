@@ -1,5 +1,7 @@
 # Fakex
 
+[![Build Status](https://travis-ci.com/bernardolins/fakex.svg?token=nSxTcKtuZPdY1GgrbMLv&branch=master)](https://travis-ci.com/bernardolins/fakex)
+
 ```elixir
 setup do
   Fakex.Behavior.create(:error, status_code: 400, body: ~s<"error": "bad request">)
