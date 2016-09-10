@@ -6,3 +6,5 @@ otp_release:
 script:
   - mix test
   - MIX_ENV=test mix coveralls
+after_success:
+    - coveralls
