@@ -3,13 +3,13 @@ defmodule Fakex.ActionTest do
   doctest Fakex
 
   @valid_behavior %{response_body: "\"user\": \"test\"", response_code: 200}
-  test "#stop return error if agent not started" do
-    assert Fakex.Action.stop == {:error, :not_started}
+  test "#destroy_all return error if agent not started" do
+    assert Fakex.Action.destroy_all == {:error, :no_action_to_destroy}
   end
 
-  test "#stop return :ok if agent is correctly stoped" do
+  test "#destroy_all return :ok if agent is correctly destroy_alled" do
     Fakex.Action.create(:test, @valid_behavior)
-    assert Fakex.Action.stop == :ok
+    assert Fakex.Action.destroy_all == :ok
   end
 
   test "#create return error if name is not atom" do
@@ -31,24 +31,24 @@ defmodule Fakex.ActionTest do
   test "#create put a new behavior on the list" do
     assert Fakex.Action.create(:test, @valid_behavior) == :ok
     assert Agent.get(Fakex.Action, fn(list) -> list end) == [test: @valid_behavior]
-    Fakex.Action.stop
+    Fakex.Action.destroy_all
   end
 
   test "#get returns all behaviors" do
     Fakex.Action.create(:test, @valid_behavior)
     assert Fakex.Action.get == {:ok, [test: @valid_behavior]}
-    Fakex.Action.stop
+    Fakex.Action.destroy_all
   end
 
   test "#get(name) returns behaviors by name" do
     Fakex.Action.create(:test, @valid_behavior)
     assert Fakex.Action.get(:test) == {:ok, @valid_behavior}
-    Fakex.Action.stop
+    Fakex.Action.destroy_all
   end
 
   test "#get(name) returns not found error if there are no behaviors with that name" do
     Fakex.Action.create(:test, @valid_behavior)
     assert Fakex.Action.get(:test2) == {:error, :not_found}
-    Fakex.Action.stop
+    Fakex.Action.destroy_all
   end
 end

@@ -1,7 +1,7 @@
 defmodule Fakex.Action do
-  def stop do
+  def destroy_all do
     case Process.whereis(__MODULE__) do
-      nil -> {:error, :not_started}
+      nil -> {:error, :no_action_to_destroy}
       _ -> Agent.stop(__MODULE__)
     end
   end
