@@ -15,7 +15,7 @@ defmodule Fakex.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger]]
+    [applications: [:logger, :cowboy, :plug]]
   end
 
   # Dependencies can be Hex packages:
@@ -29,6 +29,7 @@ defmodule Fakex.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [{:excoveralls, "~> 0.5", only: :test},
-     {:credo, "~> 0.4", only: [:dev, :test]}]
+     {:credo, "~> 0.4", only: [:dev, :test]},
+     {:cowboy, "~> 1.0.0"}
   end
 end
