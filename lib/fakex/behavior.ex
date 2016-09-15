@@ -1,4 +1,13 @@
 defmodule Fakex.Behavior do
+  @moduledoc """
+  Provides an interface to create behaviors
+
+  ## Examples
+  #
+  #      iex> Fakex.Behavior.create(:name, [:some_action1, :some_action2])
+  #           :ok
+  """
+
   def create(_name, []), do: {:error, :no_action}
   def create(name, action_list) do
     name
