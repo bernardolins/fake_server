@@ -5,15 +5,28 @@
 
 ```elixir
 setup do
-  Fakex.Action.create(:status_400, status_code: 400, body: ~s<"error": "bad request">)
-  Fakex.Action.create(:status_200, status_code: 200, body: ~s<"user": {"name": "John", "age": 25}>)
+  Fakex.Action.create(:st200, %{response_code: 200, response_body: ~s<"username": "mr_user">})
+  Fakex.Action.create(:st400, %{response_code: 400, response_body: ~s<"error": "bad request">})
+  Fakex.Action.create(:st403, %{response_code: 403, response_body: ~s<"error": "forbidden">})
   
-  Fakex.Behavior.create(:my_server, [:400, :200])
-  :ok
+  Fakex.Behavior.create(:bh1, [:st403, :st403, :st403])
+  Fakex.Behavior.create(:bh2, [:st403, :st200])
+  Fakex.Behavior.create(:bh3, [:st200])
 end
 
-test "retry when 400" do
-  assert User.get == %{name: "John", age: 25}
+test "get user when 200" do
+  Fakex.Server.run(:bh3)
+  assert User.get == %{username: "mr_user"}
+end
+
+test "retry when forbidden" do
+  Fakex.Server.run(:bh2)
+  assert User.get == %{username: "mr_user"}
+end
+
+test "retry 3 times and timeout" do
+  Fakex.Server.run(:bh1)
+  assert User.get == %{error: "timeout", code: 408}
 end
 ```
 
