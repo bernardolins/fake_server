@@ -1,29 +1,29 @@
-defmodule Fakex.Action do
+defmodule Fakex.Status do
   @moduledoc """
-  Provides an interface to create and destroy Actions
+  Provides an interface to create and destroy Statuss
 
   ## Examples
   #
-  #      iex> Fakex.Action.create(:action_name, %{response_code: 200, response_body: ~s<\"username\": \"some_guy\"})
+  #      iex> Fakex.Status.create(:status_name, %{response_code: 200, response_body: ~s<\"username\": \"some_guy\"})
   #           :ok
   #
-  #      iex> Fakex.Action.destroy_all
+  #      iex> Fakex.Status.destroy_all
   #           :ok
   #
   """
 
   def destroy_all do
     case Process.whereis(__MODULE__) do
-      nil -> {:error, :no_action_to_destroy}
+      nil -> {:error, :no_status_to_destroy}
       _ ->
         Agent.stop(__MODULE__)
         :ok
     end
   end
 
-  def create(name, action = %{response_code: _code, response_body: _body}) do
+  def create(name, status = %{response_code: _code, response_body: _body}) do
     case start_server do
-      {:ok, :up} -> add_action(name, action)
+      {:ok, :up} -> add_status(name, status)
       {:error, reason} -> {:error, reason}
     end
 
@@ -34,19 +34,19 @@ defmodule Fakex.Action do
   def create(_name, %{response_code: _code}) do
     {:error, :response_body_not_provided}
   end
-  def create(_action) do
+  def create(_status) do
     {:error, :name_not_provided}
   end
 
   def get do
-    {:ok, Agent.get(__MODULE__, fn(action_list) -> action_list end)}
+    {:ok, Agent.get(__MODULE__, fn(status_list) -> status_list end)}
   end
 
   def get(name) do
-    action = Agent.get(__MODULE__, fn(action_list) -> Keyword.get(action_list, name) end)
-    case action do
+    status = Agent.get(__MODULE__, fn(status_list) -> Keyword.get(status_list, name) end)
+    case status do
       nil -> {:error, :not_found}
-      _ -> {:ok, action}
+      _ -> {:ok, status}
     end
   end
 
@@ -58,10 +58,10 @@ defmodule Fakex.Action do
     end
   end
 
-  defp add_action(name, action) do
+  defp add_status(name, status) do
     case is_atom name do
       true ->
-        Agent.update(__MODULE__, fn(action_list) -> Keyword.put(action_list, name, action) end)
+        Agent.update(__MODULE__, fn(status_list) -> Keyword.put(status_list, name, status) end)
         :ok
       false -> {:error, :invalid_name}
     end
