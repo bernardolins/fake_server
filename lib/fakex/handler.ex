@@ -1,4 +1,6 @@
 defmodule Fakex.Handler do
+  @moduledoc ""
+
   def init(_type, conn, opts) do
     {:ok, conn, opts}
   end
