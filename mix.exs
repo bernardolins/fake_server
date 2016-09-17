@@ -30,6 +30,6 @@ defmodule Fakex.Mixfile do
   defp deps do
     [{:excoveralls, "~> 0.5", only: :test},
      {:credo, "~> 0.4", only: [:dev, :test]},
-     {:cowboy, "~> 1.0.0"}
+     {:cowboy, "~> 1.0.0"}]
   end
 end
