@@ -1,6 +1,5 @@
 # Fakex
-
-[![Build Status](https://travis-ci.org/bernardolins/fakex.svg?branch=master)](https://travis-ci.org/bernardolins/fakex)
+[![Build Status](https://travis-ci.org/bernardolins/fail-whale.svg?branch=master)](https://travis-ci.org/bernardolins/fail-whale)
 [![Coverage Status](https://coveralls.io/repos/github/bernardolins/fakex/badge.svg?branch=master)](https://coveralls.io/github/bernardolins/fakex?branch=master)
 
 ```elixir
