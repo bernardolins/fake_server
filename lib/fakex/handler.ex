@@ -1,4 +1,4 @@
-defmodule Fakex.Handler do
+defmodule FailWhale.Handler do
   @moduledoc ""
 
   def init(_type, conn, opts) do
@@ -17,14 +17,14 @@ defmodule Fakex.Handler do
   end
 
   defp check_behavior(behavior) do
-    case Fakex.Behavior.next_response(behavior) do
+    case FailWhale.Behavior.next_response(behavior) do
       {:ok, :no_more_actions} -> default_response
       {:ok, response} -> get_response(response)
     end
   end
 
   defp get_response(response) do
-    case Fakex.Action.get(response) do    
+    case FailWhale.Action.get(response) do    
       {:ok, response} -> response
       {:error, reason} -> {:error, reason}
     end

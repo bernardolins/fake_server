@@ -1,10 +1,10 @@
-defmodule Fakex.Behavior do
+defmodule FailWhale.Behavior do
   @moduledoc """
   Provides an interface to create behaviors
 
   ## Examples
   #
-  #      iex> Fakex.Behavior.create(:name, [:some_status1, :some_status2])
+  #      iex> FailWhale.Behavior.create(:name, [:some_status1, :some_status2])
   #           :ok
   """
 
@@ -42,7 +42,7 @@ defmodule Fakex.Behavior do
   defp validate_statuss([]), do: :ok
   defp validate_statuss(status_list) do
     [status|remaining_statuss] = status_list
-    case Fakex.Status.get(status) do
+    case FailWhale.Status.get(status) do
       {:error, _} -> {:error, {:invalid_status, status}}
       {:ok, _} -> validate_statuss(remaining_statuss)
     end

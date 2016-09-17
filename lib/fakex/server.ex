@@ -1,4 +1,4 @@
-defmodule Fakex.Server do
+defmodule FailWhale.Server do
   @moduledoc ""
 
   @doc ""
@@ -13,7 +13,7 @@ defmodule Fakex.Server do
   @doc ""
   def stop(behavior), do: :cowboy.stop_listener(behavior)
 
-  defp create_routes(hander_opts), do: [{:_, Fakex.Handler, hander_opts}]
+  defp create_routes(hander_opts), do: [{:_, FailWhale.Handler, hander_opts}]
 
   defp add_to_router(routes), do: :cowboy_router.compile([{:_, routes}])  
 
