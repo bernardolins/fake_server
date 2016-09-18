@@ -12,6 +12,7 @@ defmodule FailWhale.Handler do
 
   def terminate(_reason, _req, _state), do: :ok
 
+  defp check_behavior(nil), do: {:error, :invalid_status_list}
   defp check_behavior(behavior) do
     case FailWhale.Behavior.next_response(behavior) do
       {:error, _} -> default_response
@@ -20,6 +21,8 @@ defmodule FailWhale.Handler do
     end
   end
 
+  defp default_response, do: %{response_code: 200, response_body: ~s<"status": "no more actions">}
+
   defp get_response(response) do
     case FailWhale.Status.get(response) do    
       {:ok, response} -> response
@@ -27,8 +30,7 @@ defmodule FailWhale.Handler do
     end
   end
 
-  def default_response, do: %{response_code: 200, response_body: ~s<"status": "no more actions">}
-
+  defp respond_accordingly({:error, reason}, _conn), do: {:error, reason}
   defp respond_accordingly(response, conn) do
     case :cowboy_req.reply(response[:response_code], [], response[:response_body], conn) do
       {:ok, _} -> :ok
