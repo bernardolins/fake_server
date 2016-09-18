@@ -1,6 +1,6 @@
 # FailWhale
 [![Build Status](https://travis-ci.org/bernardolins/fail-whale.svg?branch=master)](https://travis-ci.org/bernardolins/fail-whale)
-[![Coverage Status](https://coveralls.io/repos/github/bernardolins/fakex/badge.svg?branch=master)](https://coveralls.io/github/bernardolins/fakex?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/bernardolins/fail-whale/badge.svg?branch=master)](https://coveralls.io/github/bernardolins/fail-whale?branch=master)
 
 ```elixir
 setup do
@@ -33,15 +33,15 @@ end
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
 
-  1. Add fakex to your list of dependencies in `mix.exs`:
+  1. Add fail_whale to your list of dependencies in `mix.exs`:
 
         def deps do
-          [{:fakex, "~> 0.0.1"}]
+          [{:fail_whale, "~> 0.0.1"}]
         end
 
-  2. Ensure fakex is started before your application:
+  2. Ensure fail_whale is started before your application:
 
         def application do
-          [applications: [:fakex]]
+          [applications: [:fail_whale]]
         end
 
