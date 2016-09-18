@@ -33,24 +33,24 @@ defmodule FailWhale.Behavior do
 
   defp validate_pipeline(name_error = {:error, _reason}, _status_list), do: name_error
   defp validate_pipeline(name, status_list) do
-    case validate_statuss(status_list) do
+    case validate_status(status_list) do
       :ok -> create_pipeline(name, status_list)
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp validate_statuss([]), do: :ok
-  defp validate_statuss(status_list) do
+  defp validate_status([]), do: :ok
+  defp validate_status(status_list) do
     [status|remaining_statuss] = status_list
     case FailWhale.Status.get(status) do
       {:error, _} -> {:error, {:invalid_status, status}}
-      {:ok, _} -> validate_statuss(remaining_statuss)
+      {:ok, _} -> validate_status(remaining_statuss)
     end
   end
 
   defp create_pipeline(name, status_list) do
     case Agent.start_link(fn -> status_list end, name: name) do
-      {:ok, _} -> :ok
+      {:ok, _} -> {:ok, name}
       {:error, {:already_started, _}} -> {:error, :already_exists}
       _ -> {:error, :unknown_error}
     end
