@@ -1,9 +1,7 @@
 defmodule FailWhale.Handler do
   @moduledoc ""
 
-  def init(_type, conn, opts) do
-    {:ok, conn, opts}
-  end
+  def init(_type, conn, opts), do: {:ok, conn, opts}
 
   def handle(conn, opts) do
     opts[:behavior]
@@ -12,26 +10,24 @@ defmodule FailWhale.Handler do
     |> format_response(conn, opts)
   end
 
-  def terminate(_reason, _req, _state) do
-    :ok
-  end
+  def terminate(_reason, _req, _state), do: :ok
 
   defp check_behavior(behavior) do
     case FailWhale.Behavior.next_response(behavior) do
-      {:ok, :no_more_actions} -> default_response
+      {:error, _} -> default_response
+      {:ok, :no_more_status} -> default_response
       {:ok, response} -> get_response(response)
     end
   end
 
   defp get_response(response) do
-    case FailWhale.Action.get(response) do    
+    case FailWhale.Status.get(response) do    
       {:ok, response} -> response
       {:error, reason} -> {:error, reason}
     end
   end
 
   def default_response, do: %{response_code: 200, response_body: ~s<"status": "no more actions">}
-
 
   defp respond_accordingly(response, conn) do
     case :cowboy_req.reply(response[:response_code], [], response[:response_body], conn) do
