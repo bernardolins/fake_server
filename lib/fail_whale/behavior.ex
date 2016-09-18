@@ -15,6 +15,15 @@ defmodule FailWhale.Behavior do
     |> validate_status_list(status_list)
   end 
 
+  def destroy(name) do
+    case Process.whereis(name) do
+      nil -> {:error, :no_behavior_to_destroy}
+      _ ->
+        Agent.stop(name)
+        :ok
+    end
+  end
+
   def next_response(name) do
     case Agent.get(name, fn(status_list) -> List.first(status_list) end) do
       nil -> {:ok, :no_more_status}

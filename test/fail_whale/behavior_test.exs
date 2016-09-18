@@ -35,6 +35,15 @@
     assert FailWhale.Behavior.create("test_behavior", @invalid_status_list) == {:error, :invalid_name}
   end
 
+  test "#destroy destroys a behavior if the behavior exists" do
+    FailWhale.Behavior.create(:test_behavior, @valid_status_list)
+    assert FailWhale.Behavior.destroy(:test_behavior) == :ok
+  end
+
+  test "#destroy returns error if behavior does not exists" do
+    assert FailWhale.Behavior.destroy(:test_behavior) == {:error, :no_behavior_to_destroy}
+  end
+
   test "#next_response returns the next response if there is one available" do
     FailWhale.Behavior.create(:test_behavior, @valid_status_list)
     assert FailWhale.Behavior.next_response(:test_behavior) == {:ok, :status_200}
