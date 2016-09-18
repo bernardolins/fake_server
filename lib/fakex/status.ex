@@ -22,11 +22,9 @@ defmodule FailWhale.Status do
   end
 
   def create(name, status = %{response_code: _code, response_body: _body}) do
-    case start_server do
-      {:ok, :up} -> add_status(name, status)
-      {:error, reason} -> {:error, reason}
-    end
-
+    name
+    |> validate_name
+    |> check_server_and_add(status)
   end
   def create(_name, %{response_body: _body}) do
     {:error, :response_code_not_provided}
@@ -50,7 +48,22 @@ defmodule FailWhale.Status do
     end
   end
 
-  def start_server do
+  def validate_name(name) do
+    case is_atom(name) do
+      true -> name
+      false -> {:error, {:invalid_status_name, name}}
+    end
+  end
+  
+  defp check_server_and_add({:error, {:invalid_status_name, name}}, _status), do: {:error, {:invalid_status_name, name}}
+  defp check_server_and_add(name, status) do
+    case start_server do
+      {:ok, :up} -> add_status(name, status)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp start_server do
     case Agent.start_link(fn -> [] end, name: __MODULE__) do
       {:ok, _} -> {:ok, :up} 
       {:error, {:already_started, _}} -> {:ok, :up}

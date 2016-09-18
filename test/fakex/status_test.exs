@@ -13,7 +13,7 @@ defmodule FailWhale.StatusTest do
   end
 
   test "#create return error if name is not atom" do
-    assert FailWhale.Status.create("some_invalid_name", @valid_behavior) == {:error, :invalid_name}
+    assert FailWhale.Status.create("some_invalid_name", @valid_behavior) == {:error, {:invalid_status_name, "some_invalid_name"}}
   end
 
   test "#create returns error if name not provided" do
