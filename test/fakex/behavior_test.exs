@@ -13,7 +13,7 @@
   end
 
   test "#create creates a new behavior with given statuss and current number of calls" do
-    assert FailWhale.Behavior.create(:test_behavior, @valid_status_list) == :ok
+    assert FailWhale.Behavior.create(:test_behavior, @valid_status_list) == {:ok, :test_behavior}
     assert Agent.get(:test_behavior, fn(list) -> list end) == @valid_status_list
     Agent.stop(:test_behavior)
   end
