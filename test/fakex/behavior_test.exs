@@ -12,18 +12,18 @@
     :ok
   end
 
-  test "#create creates a new behavior with given statuss and current number of calls" do
+  test "#create creates a new behavior with given status and current number of calls" do
     assert FailWhale.Behavior.create(:test_behavior, @valid_status_list) == {:ok, :test_behavior}
     assert Agent.get(:test_behavior, fn(list) -> list end) == @valid_status_list
     Agent.stop(:test_behavior)
   end
 
-  test "#create returns error if no statuss are provided" do
+  test "#create returns error if no status are provided" do
     assert FailWhale.Behavior.create(:test_behavior, []) == {:error, :no_status}
   end
 
   test "#create returns error on the first invalid status" do
-    assert FailWhale.Behavior.create(:test_behavior, @invalid_status_list) == {:error, {:invalid_status, :invalid}}
+    assert FailWhale.Behavior.create(:test_behavior, @invalid_status_list) == {:error, {:invalid_status, :invalid}} 
   end
 
   test "#create returns error when name already exists" do
@@ -42,11 +42,11 @@
     assert FailWhale.Behavior.next_response(:test_behavior) == {:ok, :timeout}
   end
 
-  test "#next_response returns behavior_empty if there is no more statuss on behavior list" do
+  test "#next_response returns behavior_empty if there is no more status on behavior list" do
     FailWhale.Behavior.create(:test_behavior, @valid_status_list)
     FailWhale.Behavior.next_response(:test_behavior)
     FailWhale.Behavior.next_response(:test_behavior)
     FailWhale.Behavior.next_response(:test_behavior)
-    assert FailWhale.Behavior.next_response(:test_behavior) == {:ok, :no_more_statuss}
+    assert FailWhale.Behavior.next_response(:test_behavior) == {:ok, :no_more_status}
   end
 end

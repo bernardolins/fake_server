@@ -12,12 +12,12 @@ defmodule FailWhale.Behavior do
   def create(name, status_list) do
     name
     |> validate_name
-    |> validate_pipeline(status_list)
+    |> validate_status_list(status_list)
   end 
 
   def next_response(name) do
     case Agent.get(name, fn(status_list) -> List.first(status_list) end) do
-      nil -> {:ok, :no_more_statuss}
+      nil -> {:ok, :no_more_status}
       response -> 
         update_pipeline(name)
         {:ok, response}
@@ -31,24 +31,43 @@ defmodule FailWhale.Behavior do
     end
   end
 
-  defp validate_pipeline(name_error = {:error, _reason}, _status_list), do: name_error
-  defp validate_pipeline(name, status_list) do
+  defp validate_status_list(name_error = {:error, _reason}, _status_list), do: name_error
+  defp validate_status_list(name, status_list) do
     case validate_status(status_list) do
-      :ok -> create_pipeline(name, status_list)
+      :ok -> create_behavior(name, status_list)
       {:error, reason} -> {:error, reason}
     end
   end
 
   defp validate_status([]), do: :ok
   defp validate_status(status_list) do
-    [status|remaining_statuss] = status_list
-    case FailWhale.Status.get(status) do
-      {:error, _} -> {:error, {:invalid_status, status}}
-      {:ok, _} -> validate_status(remaining_statuss)
+    [status|remaining_status] = status_list
+
+    case check_current_status(status) do
+      :ok -> validate_status(remaining_status)
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp create_pipeline(name, status_list) do
+  defp check_current_status(status) do
+    status  
+    |> check_status_name
+    |> check_status_existence
+  end
+
+  defp check_status_name(status) do
+    FailWhale.Status.validate_name(status)
+  end
+  
+  defp check_status_existence({:error, reason}), do: {:error, reason}
+  defp check_status_existence(status) do
+    case FailWhale.Status.get(status) do
+      {:error, _} -> {:error, {:invalid_status, status}}
+      {:ok, _} -> :ok
+    end
+  end
+
+  defp create_behavior(name, status_list) do
     case Agent.start_link(fn -> status_list end, name: name) do
       {:ok, _} -> {:ok, name}
       {:error, {:already_started, _}} -> {:error, :already_exists}
@@ -58,8 +77,8 @@ defmodule FailWhale.Behavior do
 
   defp update_pipeline(name) do
      Agent.update(name, fn(status_list) ->
-      [_|remaining_statuss] = status_list
-      remaining_statuss
+      [_|remaining_status] = status_list
+      remaining_status
     end)
   end
 end
