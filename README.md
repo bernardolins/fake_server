@@ -1,5 +1,6 @@
 # FakeServer
 [![Build Status](https://travis-ci.org/bernardolins/fake_server.svg?branch=master)](https://travis-ci.org/bernardolins/fake_server)
+[![Coverage Status](https://coveralls.io/repos/github/bernardolins/fake_server/badge.svg?branch=master)](https://coveralls.io/github/bernardolins/fake_server?branch=master)
 
 FakeServer is a simple HTTP server used to simulate external services instability on your tests. When you create the server, you provides a list of status, and the requests will be responded with those status, in order of arrival. If there are no more status, the server will respond always 200.
 
