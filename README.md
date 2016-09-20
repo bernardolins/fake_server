@@ -48,7 +48,7 @@ end
 
 ## Installation
 
-FakeServer is available on [Hex](https://hex.pm/packages/fake_server/0.2.0). To use it on your application, just add it to `mix.exs` as a test dependency.
+FakeServer is available on [Hex](https://hex.pm/packages/fake_server/0.2.1). To use it on your application, just add it to `mix.exs` as a test dependency.
 
 ```elixir
 def deps do
