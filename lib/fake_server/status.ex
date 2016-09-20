@@ -1,13 +1,13 @@
-defmodule FailWhale.Status do
+defmodule FakeServer.Status do
   @moduledoc """
   Provides an interface to create and destroy Statuss
 
   ## Examples
   #
-  #      iex> FailWhale.Status.create(:status_name, %{response_code: 200, response_body: ~s<\"username\": \"some_guy\"})
+  #      iex> FakeServer.Status.create(:status_name, %{response_code: 200, response_body: ~s<\"username\": \"some_guy\"})
   #           :ok
   #
-  #      iex> FailWhale.Status.destroy_all
+  #      iex> FakeServer.Status.destroy_all
   #           :ok
   #
   """

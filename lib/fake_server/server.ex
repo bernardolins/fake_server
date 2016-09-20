@@ -1,4 +1,4 @@
-defmodule FailWhale.Server do
+defmodule FakeServer.Server do
   @moduledoc ""
 
   @ip {127, 0, 0, 1}
@@ -22,14 +22,14 @@ defmodule FailWhale.Server do
   def stop(name), do: :cowboy.stop_listener(name)
 
   defp create_behavior(name, status_list) do
-    case FailWhale.Behavior.create(name, status_list) do
+    case FakeServer.Behavior.create(name, status_list) do
       {:error, reason} -> {:error, reason}
       {:ok, name} -> [behavior: name]
     end
   end
 
   defp create_routes({:error, reason}), do: {:error, reason}
-  defp create_routes(hander_opts), do: [{:_, FailWhale.Handler, hander_opts}]
+  defp create_routes(hander_opts), do: [{:_, FakeServer.Handler, hander_opts}]
 
   defp add_to_router({:error, reason}), do: {:error, reason}
   defp add_to_router(routes), do: :cowboy_router.compile([{:_, routes}])  

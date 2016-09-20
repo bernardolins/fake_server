@@ -1,10 +1,10 @@
-defmodule FailWhale.Behavior do
+defmodule FakeServer.Behavior do
   @moduledoc """
   Provides an interface to create behaviors
 
   ## Examples
   #
-  #      iex> FailWhale.Behavior.create(:name, [:some_status1, :some_status2])
+  #      iex> FakeServer.Behavior.create(:name, [:some_status1, :some_status2])
   #           :ok
   """
 
@@ -65,12 +65,12 @@ defmodule FailWhale.Behavior do
   end
 
   defp check_status_name(status) do
-    FailWhale.Status.validate_name(status)
+    FakeServer.Status.validate_name(status)
   end
   
   defp check_status_existence({:error, reason}), do: {:error, reason}
   defp check_status_existence(status) do
-    case FailWhale.Status.get(status) do
+    case FakeServer.Status.get(status) do
       {:error, _} -> {:error, {:invalid_status, status}}
       {:ok, _} -> :ok
     end

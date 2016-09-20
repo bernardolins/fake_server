@@ -1,4 +1,4 @@
-defmodule FailWhale.Handler do
+defmodule FakeServer.Handler do
   @moduledoc ""
 
   def init(_type, conn, opts), do: {:ok, conn, opts}
@@ -14,7 +14,7 @@ defmodule FailWhale.Handler do
 
   defp check_behavior(nil), do: {:error, :invalid_status_list}
   defp check_behavior(behavior) do
-    case FailWhale.Behavior.next_response(behavior) do
+    case FakeServer.Behavior.next_response(behavior) do
       {:error, _} -> default_response
       {:ok, :no_more_status} -> default_response
       {:ok, response} -> get_response(response)
@@ -24,7 +24,7 @@ defmodule FailWhale.Handler do
   defp default_response, do: %{response_code: 200, response_body: ~s<"status": "no more actions">}
 
   defp get_response(response) do
-    case FailWhale.Status.get(response) do    
+    case FakeServer.Status.get(response) do    
       {:ok, response} -> response
       {:error, reason} -> {:error, reason}
     end
