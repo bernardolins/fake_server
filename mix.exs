@@ -41,7 +41,7 @@ defmodule FakeServer.Mixfile do
   end
 
   defp package do
-     name: :fake_server,
+    [name: :fake_server,
      maintainers: ["Bernardo Lins"],
      licenses: ["Apache 2.0"],
      links: %{"GitHub" => "https://github.com/bernardolins/fake_server"}]
