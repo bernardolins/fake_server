@@ -44,6 +44,7 @@ defmodule UserTest do
     FakeServer.Server.stop(:external_server)
   end
 end
+```
 
 ## Installation
 
