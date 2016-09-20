@@ -1,12 +1,12 @@
-defmodule Fakex.Mixfile do
+defmodule FakeServer.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :fakex,
-     version: "0.0.1",
+    [app: :fake_server,
+     version: "0.2.0",
      elixir: "~> 1.2",
-     build_embedded: Mix.env == :prod,
-     start_permanent: Mix.env == :prod,
+     description: description,
+     package: package,
      test_coverage: [tool: ExCoveralls],
      deps: deps]
   end
@@ -32,5 +32,18 @@ defmodule Fakex.Mixfile do
      {:mock, "~> 0.2.0", only: :test},
      {:credo, "~> 0.4", only: [:dev, :test]},
      {:cowboy, "~> 1.0.0"}]
+  end
+
+	defp description do
+    """
+    FakeServer is a simple HTTP server used to simulate external services instability on your tests. When you create the server, you provides a list of status, and the requests will be responded with those status, in order of arrival. If there are no more status, the server will respond always 200.
+    """
+  end
+
+  defp package do
+     name: :fake_server,
+     maintainers: ["Bernardo Lins"],
+     licenses: ["Apache 2.0"],
+     links: %{"GitHub" => "https://github.com/bernardolins/fake_server"}]
   end
 end
