@@ -10,11 +10,11 @@ use Mix.Config
 
 # You can configure for your application as:
 #
-#     config :fail_whale, key: :value
+#     config :fake_server, key: :value
 #
 # And access this configuration in your application as:
 #
-#     Application.get_env(:fail_whale, :key)
+#     Application.get_env(:fake_server, :key)
 #
 # Or configure a 3rd-party app:
 #
