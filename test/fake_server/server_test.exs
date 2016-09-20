@@ -42,6 +42,12 @@ defmodule FakeServer.ServerTest do
     FakeServer.Server.stop(:external)
   end
 
+  test "#run with default port creates a server on the passed port" do
+    {:ok, address} = FakeServer.Server.run(:external, :status_200, %{port: 5000})
+    assert address == "127.0.0.1:5000"
+    FakeServer.Server.stop(:external)
+  end
+
   test "#stop stops a server if the server name is valid" do
     FakeServer.Server.run(:external, [:status_200])
     assert FakeServer.Server.stop(:external) == :ok

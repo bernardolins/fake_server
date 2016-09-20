@@ -18,6 +18,16 @@ defmodule FakeServer.Server do
     |> start_server(name)
   end 
 
+  def run(name, status_list, opts = %{}) do
+    status_list = List.wrap(status_list)
+    name
+    |> create_behavior(status_list)
+    |> create_routes
+    |> add_to_router
+    |> server_config(opts)
+    |> start_server(name)
+  end
+
   @doc ""
   def stop(name), do: :cowboy.stop_listener(name)
 
@@ -37,6 +47,13 @@ defmodule FakeServer.Server do
   defp server_config({:error, reason}), do: {:error, reason}
   defp server_config(routes) do
     [port: choose_port,
+     routes: routes,
+     max_connections: 100]
+  end
+
+  defp server_config({:error, reason}, _opts), do: {:error, reason}
+  defp server_config(routes, %{port: port}) do
+    [port: port,
      routes: routes,
      max_connections: 100]
   end
