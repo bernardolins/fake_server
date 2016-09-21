@@ -1,17 +1,27 @@
 defmodule FakeServer.Status do
   @moduledoc """
-  Provides an interface to create and destroy Statuss
-
-  ## Examples
-  #
-  #      iex> FakeServer.Status.create(:status_name, %{response_code: 200, response_body: ~s<\"username\": \"some_guy\"})
-  #           :ok
-  #
-  #      iex> FakeServer.Status.destroy_all
-  #           :ok
-  #
+  Provides an interface to create and destroy a Status. The status should have:
+  * a `name`
+  * some `options`. Currently `response_code` and `response_body` are mandatory.
   """
 
+  @doc """
+  This function destroys all Status. Since status are reusable entities, there makes no sense to destroy only one of them.
+  You should use this function when you want to perform a cleanup.
+
+  ### Examples
+  ```elixir
+  FakeServer.Status.destroy_all
+  :ok
+  ```
+
+  If there are no status, this function will return an error:
+
+  ```elixir
+  FakeServer.Status.destroy_all
+  {:error, :no_status_to_destroy}
+  ```
+  """
   def destroy_all do
     case Process.whereis(__MODULE__) do
       nil -> {:error, :no_status_to_destroy}
@@ -21,6 +31,33 @@ defmodule FakeServer.Status do
     end
   end
 
+
+  @doc """
+  This function creates a new status.
+
+  ### Parameters
+  - `name`: The name must be an atom. This name identifies the status on `FakeServer.run/2` or `FakeServer.run/3`.
+  - `status`: The atributes of the status. This represents the response of the fake server when a request arrives. Currently, the following options are accepted:
+    - `response_code`: This parameter is **mandatory**. This is the code the fake server will respond with. Must be a valid http response code, like 200, 400 or 500.
+    - `response_body`: This parameter is **mandatory**. This is the body of the response of the fake server. Can be any valid http body, like a plain text or a JSON.
+
+
+  ### Return values
+  If everything is ok, this function will return `:ok`. Otherwise, it will return an error and the reason.
+
+  ### Examples
+  ```elixir
+  FakeServer.Status.create(:status200, 
+                           %{response_code: 200, response_body: ~s<"username": "mr_user">})
+  :ok
+  FakeServer.Status.create(:status500, 
+                           %{response_code: 500, response_body: ~s<"error": "internal server error">})
+  :ok
+  FakeServer.Status.create(:status403,
+                           %{response_code: 403, response_body: ~s<"error": "forbidden">})
+  :ok
+  ```
+  """
   def create(name, status = %{response_code: _code, response_body: _body}) do
     name
     |> validate_name
@@ -32,14 +69,17 @@ defmodule FakeServer.Status do
   def create(_name, %{response_code: _code}) do
     {:error, :response_body_not_provided}
   end
+  @doc false
   def create(_status) do
     {:error, :name_not_provided}
   end
 
+  @doc false
   def get do
     {:ok, Agent.get(__MODULE__, fn(status_list) -> status_list end)}
   end
 
+  @doc false
   def get(name) do
     status = Agent.get(__MODULE__, fn(status_list) -> Keyword.get(status_list, name) end)
     case status do
@@ -48,6 +88,7 @@ defmodule FakeServer.Status do
     end
   end
 
+  @doc false
   def validate_name(name) do
     case is_atom(name) do
       true -> name
