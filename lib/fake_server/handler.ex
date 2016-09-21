@@ -1,5 +1,5 @@
 defmodule FakeServer.Handler do
-  @moduledoc ""
+  @moduledoc false
 
   def init(_type, conn, opts), do: {:ok, conn, opts}
 
