@@ -1,12 +1,5 @@
 defmodule FakeServer.Behavior do
-  @moduledoc """
-  Provides an interface to create behaviors
-
-  ## Examples
-  #
-  #      iex> FakeServer.Behavior.create(:name, [:some_status1, :some_status2])
-  #           :ok
-  """
+  @moduledoc false
 
   def create(_name, []), do: {:error, :no_status}
   def create(name, status_list) do
