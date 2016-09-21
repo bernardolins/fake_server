@@ -4,6 +4,9 @@
 
 FakeServer is a simple HTTP server used to simulate external services instability on your tests. When you create the server, you provides a list of status, and the requests will be responded with those status, in order of arrival. If there are no more status, the server will respond always 200.
 
+## Documentation
+Detailed documentation is available on [Hexdocs](https://hexdocs.pm/fake_server/0.3.0)
+
 ## Basic Usage
 
 **Important:** From version *0.2.1* to *0.3.0*, `FakeServer.Server` was replaced by `FakeServer`
