@@ -1,8 +1,10 @@
 defmodule FakeServer.Status do
   @moduledoc """
-  Provides an interface to create and destroy a Status. The status should have:
+  Provides an interface to create and destroy status. 
+  
+  The status must have:
   * a `name`
-  * some `options`. Currently `response_code` and `response_body` are mandatory.
+  * some `config`. Currently `response_code` and `response_body` are mandatory parameters on the config.
   """
 
   @doc """
