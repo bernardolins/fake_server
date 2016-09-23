@@ -32,12 +32,13 @@ defmodule FakeServer.Mixfile do
      {:mock, "~> 0.2.0", only: :test},
      {:credo, "~> 0.4", only: [:dev, :test]},
      {:ex_doc, ">= 0.0.0", only: :dev},
+     {:inch_ex, only: :docs},
      {:cowboy, "~> 1.0.0"}]
   end
 
 	defp description do
     """
-    FakeServer is a simple HTTP server used to simulate external services instability on your tests. When you create the server, you provides a list of status, and the requests will be responded with those status, in order of arrival. If there are no more status, the server will respond always 200.
+    FakeServer is a simple HTTP server used to mock external services responses on your tests.
     """
   end
 
