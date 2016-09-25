@@ -70,6 +70,23 @@ defmodule FakeServer do
   def stop(name), do: :cowboy.stop_listener(name)
 
   @doc """
+  Modifies behavior of a running server.
+
+  ### Return values
+  If the server is running, it will return `:ok`. Otherwise, it will return `{:error, :not_found}`.
+  Also, if the status list contains one or more inexistent status an :invalid_status error will be returned.
+
+  ### Examples
+  ```elixir
+  FakeServer.modify_behavior(:running_server, [:new_status1, :new_status2])
+  :ok
+  FakeServer.modify_behavior(:invalid_server, [:new_status])
+  {:error, :server_not_found}
+  FakeServer.modify_behavior(:invalid_server, [:inexistent_status])
+  {:error, {:invalid_status, :inexistent_status}}
+  FakeServer.modify_behavior(:invalid_server, [])
+  {:error, :no_status}
+  ```
   """
   def modify_behavior(_name, []), do: {:error, :empty_status_list}
   def modify_behavior(name, new_status_list) do
