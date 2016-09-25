@@ -1,7 +1,6 @@
 defmodule FakeServer.Behavior do
   @moduledoc false
 
-  def create(_name, []), do: {:error, :no_status}
   def create(name, status_list) do
     name
     |> validate_name
@@ -23,6 +22,19 @@ defmodule FakeServer.Behavior do
       response -> 
         update_pipeline(name)
         {:ok, response}
+    end
+  end
+
+  def modify(_name, []), do: {:error, :no_status}
+  def modify(name, status_list) do
+    case validate_status(status_list) do
+      :ok -> 
+        try do
+          Agent.update(name, fn(_old_status_list) -> status_list end)
+        catch
+          :exit, _ -> {:error, :server_not_found}
+        end
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -78,7 +90,7 @@ defmodule FakeServer.Behavior do
   end
 
   defp update_pipeline(name) do
-     Agent.update(name, fn(status_list) ->
+    Agent.update(name, fn(status_list) ->
       [_|remaining_status] = status_list
       remaining_status
     end)

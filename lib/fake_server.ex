@@ -38,7 +38,6 @@ defmodule FakeServer do
   {:ok, "127.0.0.1:7293"}
   ```
   """
-  def run(_name, [], _opts), do: {:error, :no_status}
   def run(name, status_list, opts) do
     status_list = List.wrap(status_list)
     name
@@ -69,6 +68,14 @@ defmodule FakeServer do
   ```
   """
   def stop(name), do: :cowboy.stop_listener(name)
+
+  @doc """
+  """
+  def modify_behavior(_name, []), do: {:error, :empty_status_list}
+  def modify_behavior(name, new_status_list) do
+    new_status_list = List.wrap(new_status_list)
+    FakeServer.Behavior.modify(name, new_status_list)
+  end
 
   defp create_behavior(name, status_list) do
     case FakeServer.Behavior.create(name, status_list) do

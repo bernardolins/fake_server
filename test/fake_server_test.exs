@@ -21,14 +21,16 @@ defmodule FakeServerTest do
     FakeServer.stop(:external)
   end
 
+  test "#run does not return error when no status is passed to server" do
+    server = FakeServer.run(:external, [])
+    assert elem(server, 0) == :ok
+    assert String.contains?(elem(server, 1), "127.0.0.1:")
+    FakeServer.stop(:external)
+  end
+
   test "#run return error when server already exists" do
     FakeServer.run(:external, [:status_200])
     assert FakeServer.run(:external, [:status_200]) == {:error, :already_exists}
-    FakeServer.stop(:external)
-  end
-  
-  test "#run return error when no status is passed to server" do
-    assert FakeServer.run(:external, []) == {:error, :no_status}
     FakeServer.stop(:external)
   end
   
@@ -55,5 +57,33 @@ defmodule FakeServerTest do
 
   test "#stop returns error if the server passed as argument does not exists" do
     assert FakeServer.stop(:external) == {:error, :not_found}
+  end
+
+  test "#modify_behavior updates server status list if the server and status_list are valid" do
+    FakeServer.run(:external, [])
+    assert FakeServer.modify_behavior(:external, [:status_200]) == :ok
+    FakeServer.stop(:external)
+  end
+
+  test "#modify_behavior does not return error if argument is not a list and just one status is passed as argument" do
+    FakeServer.run(:external, [])
+    assert FakeServer.modify_behavior(:external, :status_200) == :ok
+    FakeServer.stop(:external)
+  end
+
+  test "#modify_behavior returns server not found if ther server name does not exist" do
+    assert FakeServer.modify_behavior(:external_invalid, :status_200) == {:error, :server_not_found}
+  end
+
+  test "#modify_behavior returns invalid_status_name if one or more status name are invalid" do
+    FakeServer.run(:external, [])
+    assert FakeServer.modify_behavior(:external, "status_invalid") == {:error, {:invalid_status_name, "status_invalid"}} 
+    FakeServer.stop(:external)
+  end
+
+  test "#modify_behavior returns invalid_status if one or more status on the status list does not exist" do
+    FakeServer.run(:external, [])
+    assert FakeServer.modify_behavior(:external, :status_invalid) == {:error, {:invalid_status, :status_invalid}}
+    FakeServer.stop(:external)
   end
 end
