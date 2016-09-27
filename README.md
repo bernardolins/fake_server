@@ -38,7 +38,7 @@ FakeServer.Status.create(:status403, %{response_code: 403, response_body: ~s<"er
 defmodule UserTest do
   use ExUnit.Case
 
-  setup do
+  setup_all do
     # you can run a single server on a test file
     # start a fake server with an empty status_list
     # you can ignore the third param if you want the server to run on a random port
