@@ -42,6 +42,7 @@ defmodule UserTest do
     # you can run a single server on a test file
     # start a fake server with an empty status_list
     # you can ignore the third param if you want the server to run on a random port
+    # when using a global server, make sure :async option is set to false on ExUnit
     {:ok, address} = FakeServer.run(:external_server, [], %{port: 5000})
 
     # point your application to the new fake server
