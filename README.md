@@ -6,7 +6,7 @@
 FakeServer is a simple HTTP server used to mock external services responses on your tests. With it, you can simulate services instability, check if the external request was made or if the cache was used, and many other complex scenarios that can be very difficult to simulate on a test. When you create the server, you provide a list of status, and the requests will be responded with the first status on that list, in order of arrival. If there are no more status, the server will respond always 200.
 
 ## Documentation
-Detailed documentation is available on [Hexdocs](https://hexdocs.pm/fake_server/0.4.0)
+Detailed documentation is available on [Hexdocs](https://hexdocs.pm/fake_server/api-reference.html)
 
 
 **Important:** From version *0.2.1* to *0.3.0*, `FakeServer.Server` was replaced by `FakeServer`
@@ -95,10 +95,10 @@ end
 
 ## Installation
 
-FakeServer is available on [Hex](https://hex.pm/packages/fake_server/0.4.0). To use it on your application, just add it to `mix.exs` as a test dependency.
+FakeServer is available on [Hex](https://hex.pm/packages/fake_server). To use it on your application, just add it to `mix.exs` as a test dependency.
 
 ```elixir
 def deps do
-  [{:fake_server, "~> 0.4.0", only: :test}]
+  [{:fake_server, "~> 0.4.1", only: :test}]
 end
 ```
