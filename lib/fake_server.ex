@@ -39,13 +39,17 @@ defmodule FakeServer do
   ```
   """
   def run(name, status_list, opts) do
-    status_list = List.wrap(status_list)
-    name
-    |> create_behavior(status_list)
-    |> create_routes
-    |> add_to_router
-    |> server_config(opts)
-    |> start_server(name)
+    case Application.ensure_all_started(:cowboy) do
+      {:ok, _} ->
+        status_list = List.wrap(status_list)
+        name
+        |> create_behavior(status_list)
+        |> create_routes
+        |> add_to_router
+        |> server_config(opts)
+        |> start_server(name)
+      {:error, _} -> {:error, :server_could_not_be_started}
+    end
   end 
 
   @doc """ 

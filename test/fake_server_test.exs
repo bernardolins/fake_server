@@ -2,6 +2,8 @@ defmodule FakeServerTest do
   use ExUnit.Case
   doctest FakeServer
 
+  import Mock
+
   setup do
     FakeServer.Status.create(:status_200, %{response_code: 200, response_body: ~s<"username": "mr_user", "age": 25>})
     FakeServer.Status.create(:status_400, %{response_code: 400, response_body: ~s<"error": "bad_request">})
@@ -48,6 +50,12 @@ defmodule FakeServerTest do
     {:ok, address} = FakeServer.run(:external, :status_200, %{port: 5000})
     assert address == "127.0.0.1:5000"
     FakeServer.stop(:external)
+  end
+
+  test "#run returns error when coyboy application failed to start" do
+    with_mock Application, [ensure_all_started: fn(:cowboy) -> {:error, :any_error} end] do
+      assert FakeServer.run(:server, []) == {:error, :server_could_not_be_started}
+    end
   end
 
   test "#stop stops a server if the server name is valid" do
