@@ -10,7 +10,7 @@ defmodule FakeServer.HandlerTest do
   @inexistent_status_opts [behavior: :invalid_behavior]
 
   setup_all do
-    FakeServer.Status.create(:status_200, %{response_code: 200, response_body: "test"})
+    FakeServer.Status.create(:status_200, %{response_code: 200, response_body: "test", response_headers:  %{ "Content-Length" => 5 }})
     :ok
   end
 
