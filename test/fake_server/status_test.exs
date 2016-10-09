@@ -2,7 +2,7 @@ defmodule FakeServer.StatusTest do
   use ExUnit.Case
   doctest FakeServer
 
-  @valid_behavior %{response_body: "\"user\": \"test\"", response_code: 200}
+  @valid_behavior %{response_body: "\"user\": \"test\"", response_code: 200, response_headers:  %{ "Content-Length" => 5 }}
   test "#destroy_all return error if agent not started" do
     assert FakeServer.Status.destroy_all == {:error, :no_status_to_destroy}
   end
@@ -43,6 +43,13 @@ defmodule FakeServer.StatusTest do
   test "#get(name) returns behaviors by name" do
     FakeServer.Status.create(:test, @valid_behavior)
     assert FakeServer.Status.get(:test) == {:ok, @valid_behavior}
+    FakeServer.Status.destroy_all
+  end
+
+  test "#get(name) returns behaviors by name and includes response headers" do
+    FakeServer.Status.create(:test, @valid_behavior)
+    {:ok, valid_behavior} = FakeServer.Status.get(:test)
+    assert valid_behavior.response_headers == %{ "Content-Length"=> 5 }
     FakeServer.Status.destroy_all
   end
 

@@ -65,6 +65,11 @@ defmodule FakeServer.Status do
     |> validate_name
     |> check_server_and_add(status)
   end
+  def create(name, status = %{response_code: _code, response_body: _body, response_headers: _headers}) do
+    name
+    |> validate_name
+    |> check_server_and_add(status)
+  end
   def create(_name, %{response_body: _body}) do
     {:error, :response_code_not_provided}
   end
