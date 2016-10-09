@@ -1,7 +1,7 @@
 defmodule FakeServer.Status do
   @moduledoc """
-  Provides an interface to create and destroy status. 
-  
+  Provides an interface to create and destroy status.
+
   The status must have:
   * a `name`
   * some `config`. Currently `response_code` and `response_body` are mandatory parameters on the config.
@@ -49,21 +49,28 @@ defmodule FakeServer.Status do
 
   ### Examples
   ```elixir
-  FakeServer.Status.create(:status200, 
+  FakeServer.Status.create(:status200,
                            %{response_code: 200, response_body: ~s<"username": "mr_user">})
   :ok
-  FakeServer.Status.create(:status500, 
+  FakeServer.Status.create(:status500,
                            %{response_code: 500, response_body: ~s<"error": "internal server error">})
   :ok
   FakeServer.Status.create(:status403,
                            %{response_code: 403, response_body: ~s<"error": "forbidden">})
   :ok
+  FakeServer.Status.create(:status200,
+                           %{response_code: 200, response_body: ~s<"username": "mr_user">, response_headers: %{"Content-Length": 5}})
+  :ok
   ```
   """
-  def create(name, status = %{response_code: _code, response_body: _body}) do
+  def create(name, status = %{response_code: _code, response_body: _body, response_headers: _headers}) do
+    status = Map.update!(status, :response_headers, &(Map.to_list/1))
     name
     |> validate_name
     |> check_server_and_add(status)
+  end
+  def create(name, _status = %{response_code: code, response_body: body}) do
+    create(name, %{response_code: code, response_body: body, response_headers: %{}})
   end
   def create(_name, %{response_body: _body}) do
     {:error, :response_code_not_provided}
@@ -97,7 +104,7 @@ defmodule FakeServer.Status do
       false -> {:error, {:invalid_status_name, name}}
     end
   end
-  
+
   defp check_server_and_add({:error, {:invalid_status_name, name}}, _status), do: {:error, {:invalid_status_name, name}}
   defp check_server_and_add(name, status) do
     case start_server do
@@ -108,7 +115,7 @@ defmodule FakeServer.Status do
 
   defp start_server do
     case Agent.start_link(fn -> [] end, name: __MODULE__) do
-      {:ok, _} -> {:ok, :up} 
+      {:ok, _} -> {:ok, :up}
       {:error, {:already_started, _}} -> {:ok, :up}
       {:error, reason} -> {:error, reason}
     end

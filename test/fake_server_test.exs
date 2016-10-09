@@ -35,12 +35,12 @@ defmodule FakeServerTest do
     assert FakeServer.run(:external, [:status_200]) == {:error, :already_exists}
     FakeServer.stop(:external)
   end
-  
+
   test "#run return error when one or more invalid status are passed as argument" do
     assert FakeServer.run(:external, [:status_200, :some_status]) == {:error, {:invalid_status, :some_status}}
     FakeServer.stop(:external)
   end
-  
+
   test "#run return error when one or more status name are not atoms" do
     assert FakeServer.run(:external, ["some_status"]) == {:error, {:invalid_status_name, "some_status"}}
     FakeServer.stop(:external)
@@ -85,7 +85,7 @@ defmodule FakeServerTest do
 
   test "#modify_behavior returns invalid_status_name if one or more status name are invalid" do
     FakeServer.run(:external, [])
-    assert FakeServer.modify_behavior(:external, "status_invalid") == {:error, {:invalid_status_name, "status_invalid"}} 
+    assert FakeServer.modify_behavior(:external, "status_invalid") == {:error, {:invalid_status_name, "status_invalid"}}
     FakeServer.stop(:external)
   end
 

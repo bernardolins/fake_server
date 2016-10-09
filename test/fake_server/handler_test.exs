@@ -9,8 +9,12 @@ defmodule FakeServer.HandlerTest do
   @invalid_opts [no_behavior: :behavior]
   @inexistent_status_opts [behavior: :invalid_behavior]
 
+  @response_code 200
+  @response_body "test body"
+  @response_headers %{ "Content-Length": 5 }
+
   setup_all do
-    FakeServer.Status.create(:status_200, %{response_code: 200, response_body: "test"})
+    FakeServer.Status.create(:status_200, %{response_code: @response_code, response_body: @response_body, response_headers: @response_headers})
     :ok
   end
 
@@ -27,7 +31,16 @@ defmodule FakeServer.HandlerTest do
     end
     FakeServer.Behavior.destroy(:behavior)
   end
-  
+
+  test "#handle passes correct status code, body and headers to cowboy to reply with" do
+    FakeServer.Behavior.create(:behavior, [:status_200])
+    response_headers = Map.to_list(@response_headers)
+    with_mock :cowboy_req, [reply: fn(@response_code, response_headers, @response_body, _) -> {:ok, :replied}  end] do
+      assert FakeServer.Handler.handle(@conn, @valid_opts) == {:ok, @conn, @valid_opts}
+    end
+    FakeServer.Behavior.destroy(:behavior)
+  end
+
   test "#handle returns shutdown command if something went wrong during reply" do
     FakeServer.Behavior.create(:behavior, [:status_200])
     with_mock :cowboy_req, [reply: fn(_,_,_,_) -> {:error, :some_error}  end] do
@@ -54,7 +67,7 @@ defmodule FakeServer.HandlerTest do
   test "#handle does not return error when next_response returns error" do
     FakeServer.Behavior.create(:behavior, [:status_200])
     with_mocks([{:cowboy_req, [], [reply: fn(_,_,_,_) -> {:ok, :replied} end]},
-                {FakeServer.Behavior, [], [next_response: fn(_name) -> {:error, :some_error} end]} ]) do 
+                {FakeServer.Behavior, [], [next_response: fn(_name) -> {:error, :some_error} end]} ]) do
       assert FakeServer.Handler.handle(@conn, @valid_opts) == {:ok, @conn, @valid_opts}
     end
     FakeServer.Behavior.destroy(:behavior)

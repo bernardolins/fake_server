@@ -5,7 +5,7 @@ defmodule FakeServer.Behavior do
     name
     |> validate_name
     |> validate_status_list(status_list)
-  end 
+  end
 
   def destroy(name) do
     case Process.whereis(name) do
@@ -19,7 +19,7 @@ defmodule FakeServer.Behavior do
   def next_response(name) do
     case Agent.get(name, fn(status_list) -> List.first(status_list) end) do
       nil -> {:ok, :no_more_status}
-      response -> 
+      response ->
         update_pipeline(name)
         {:ok, response}
     end
@@ -28,7 +28,7 @@ defmodule FakeServer.Behavior do
   def modify(_name, []), do: {:error, :no_status}
   def modify(name, status_list) do
     case validate_status(status_list) do
-      :ok -> 
+      :ok ->
         try do
           Agent.update(name, fn(_old_status_list) -> status_list end)
         catch
@@ -64,7 +64,7 @@ defmodule FakeServer.Behavior do
   end
 
   defp check_current_status(status) do
-    status  
+    status
     |> check_status_name
     |> check_status_existence
   end
@@ -72,7 +72,7 @@ defmodule FakeServer.Behavior do
   defp check_status_name(status) do
     FakeServer.Status.validate_name(status)
   end
-  
+
   defp check_status_existence({:error, reason}), do: {:error, reason}
   defp check_status_existence(status) do
     case FakeServer.Status.get(status) do

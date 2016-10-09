@@ -33,6 +33,9 @@ FakeServer.Status.create(:status200, %{response_code: 200, response_body: ~s<"us
 FakeServer.Status.create(:status500, %{response_code: 500, response_body: ~s<"error": "internal server error">})
 FakeServer.Status.create(:status403, %{response_code: 403, response_body: ~s<"error": "forbidden">})
 
+# you can also pass `response_header` (optional):
+FakeServer.Status.create(:status200, %{response_code: 200, response_body: "OK", resonse_headers: %{"Conent-Length": 5}})
+
 
 ### test/user_test.exs
 defmodule UserTest do
@@ -53,7 +56,7 @@ defmodule UserTest do
       FakeServer.stop(:external_server)
     end
   end
-  
+
   test "#get returns user if the external server responds 200" do
     # add the status sequence will want the server to respond with
     # the fake server will respond with the first status on the list
@@ -65,14 +68,14 @@ defmodule UserTest do
     # make the request to the fake server and validate it works
     assert User.get == %{username: "mr_user"}
   end
-  
+
   test "#get retry up to 3 times when external server responds with 500" do
     {:ok, address} = FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status200])
 
     # you can easily test a retry scenario, where one call to the external service makes multiple requests
     assert User.get == %{username: "mr_user"}
   end
-  
+
   test "#get returns timeout after 3 retries" do
     # another retry example, this time with a timeout scenario
     {:ok, address} = FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status500])

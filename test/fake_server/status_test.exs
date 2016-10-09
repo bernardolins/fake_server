@@ -30,19 +30,27 @@ defmodule FakeServer.StatusTest do
 
   test "#create put a new behavior on the list" do
     assert FakeServer.Status.create(:test, @valid_behavior) == :ok
-    assert Agent.get(FakeServer.Status, fn(list) -> list end) == [test: @valid_behavior]
+    assert Agent.get(FakeServer.Status, fn(list) -> list end) == [test: Map.put(@valid_behavior, :response_headers, [])]
+    FakeServer.Status.destroy_all
+  end
+
+  test "#create accepts response_headers option" do
+    assert FakeServer.Status.create(:with_headers, Map.put(@valid_behavior, :response_headers, %{"Content-Length": 5})) == :ok
+    assert Agent.get(FakeServer.Status, fn(list) -> list end) == [with_headers: Map.put(@valid_behavior, :response_headers, ["Content-Length": 5])]
     FakeServer.Status.destroy_all
   end
 
   test "#get returns all behaviors" do
     FakeServer.Status.create(:test, @valid_behavior)
-    assert FakeServer.Status.get == {:ok, [test: @valid_behavior]}
+    behaviour_with_headers = Map.put_new(@valid_behavior, :response_headers, [])
+    assert FakeServer.Status.get == {:ok, [test: behaviour_with_headers]}
     FakeServer.Status.destroy_all
   end
 
   test "#get(name) returns behaviors by name" do
     FakeServer.Status.create(:test, @valid_behavior)
-    assert FakeServer.Status.get(:test) == {:ok, @valid_behavior}
+    behaviour_with_headers = Map.put_new(@valid_behavior, :response_headers, [])
+    assert FakeServer.Status.get(:test) == {:ok, behaviour_with_headers}
     FakeServer.Status.destroy_all
   end
 
