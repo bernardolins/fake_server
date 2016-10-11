@@ -6,9 +6,9 @@ defmodule FakeServer.BehaviorTest do
   @invalid_status_list [:status_200, :status_400, :invalid]
 
   setup_all do
-      FakeServer.Status.create(:status_200, %{response_code: 200, response_body: ~s<"user": "Test", "age": 25>})
-      FakeServer.Status.create(:status_400, %{response_code: 400, response_body: ~s<"error": "bad request">})
-      FakeServer.Status.create(:timeout, %{response_code: 408, response_body: ~s<"error": "request timeout">})
+    FakeServer.Status.create(:status_200, %{response_code: 200, response_body: ~s<"user": "Test", "age": 25>})
+    FakeServer.Status.create(:status_400, %{response_code: 400, response_body: ~s<"error": "bad request">})
+    FakeServer.Status.create(:timeout, %{response_code: 408, response_body: ~s<"error": "request timeout">})
     :ok
   end
 
@@ -19,11 +19,11 @@ defmodule FakeServer.BehaviorTest do
   end
 
   test "#create does not returns error if no status are provided" do
-    assert FakeServer.Behavior.create(:test_behavior, []) == {:ok, :test_behavior} 
+    assert FakeServer.Behavior.create(:test_behavior, []) == {:ok, :test_behavior}
   end
 
   test "#create returns error on the first invalid status" do
-    assert FakeServer.Behavior.create(:test_behavior, @invalid_status_list) == {:error, {:invalid_status, :invalid}} 
+    assert FakeServer.Behavior.create(:test_behavior, @invalid_status_list) == {:error, {:invalid_status, :invalid}}
   end
 
   test "#create returns error when name already exists" do
@@ -51,7 +51,7 @@ defmodule FakeServer.BehaviorTest do
     assert FakeServer.Behavior.next_response(:test_behavior) == {:ok, :timeout}
   end
 
-  test "#next_response returns behavior_empty if there is no more status on behavior list" do
+  test "#next_response returns no_more_status if there is no more status on behavior list" do
     FakeServer.Behavior.create(:test_behavior, @valid_status_list)
     FakeServer.Behavior.next_response(:test_behavior)
     FakeServer.Behavior.next_response(:test_behavior)
@@ -65,7 +65,7 @@ defmodule FakeServer.BehaviorTest do
   end
 
   test "#modify returns server not found if server name does not exist" do
-    assert FakeServer.Behavior.modify(:test_behavior, [:status_200]) == {:error, :server_not_found} 
+    assert FakeServer.Behavior.modify(:test_behavior, [:status_200]) == {:error, :server_not_found}
   end
 
   test "#modify returns error if status list is invalid" do

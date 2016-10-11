@@ -24,7 +24,7 @@ defmodule FakeServer.Handler do
   defp default_response, do: %{response_code: 200, response_body: ~s<"status": "no more actions">}
 
   defp get_response(response) do
-    case FakeServer.Status.get(response) do    
+    case FakeServer.Status.get(response) do
       {:ok, response} -> response
       {:error, reason} -> {:error, reason}
     end
@@ -32,7 +32,7 @@ defmodule FakeServer.Handler do
 
   defp respond_accordingly({:error, reason}, _conn), do: {:error, reason}
   defp respond_accordingly(response, conn) do
-    case :cowboy_req.reply(response[:response_code], [], response[:response_body], conn) do
+    case :cowboy_req.reply(response[:response_code], response[:response_headers], response[:response_body], conn) do
       {:ok, _} -> :ok
       {:error, reason} -> {:error, reason}
     end
