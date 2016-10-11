@@ -30,7 +30,7 @@ defmodule FakeServer.Mixfile do
   defp deps do
     [{:excoveralls, "~> 0.5", only: :test},
      {:mock, "~> 0.2.0", only: :test},
-     {:credo, "~> 0.4", only: [:dev, :test]},
+     {:credo, "~> 0.4.12", only: [:dev, :test]},
      {:ex_doc, ">= 0.0.0", only: :dev},
      {:inch_ex, only: :docs},
      {:cowboy, "~> 1.0.0"}]
