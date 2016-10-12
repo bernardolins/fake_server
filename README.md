@@ -3,25 +3,60 @@
 [![Coverage Status](https://coveralls.io/repos/github/bernardolins/fake_server/badge.svg?branch=master)](https://coveralls.io/github/bernardolins/fake_server?branch=master)
 [![Inline docs](http://inch-ci.org/github/bernardolins/fake_server.svg?branch=master&style=shields)](http://inch-ci.org/github/bernardolins/fake_server)
 
-FakeServer is a simple HTTP server used to mock external services responses on your tests. With it, you can simulate services instability, check if the external request was made or if the cache was used, and many other complex scenarios that can be very difficult to simulate on a test. When you create the server, you provide a list of status, and the requests will be responded with the first status on that list, in order of arrival. If there are no more status, the server will respond always 200.
+FakeServer is a simple Elixir library that helps you to mock web requests. 
 
-## Documentation
-Detailed documentation is available on [Hexdocs](https://hexdocs.pm/fake_server/api-reference.html)
+## Installation
 
+FakeServer is available on [Hex](https://hex.pm/packages/fake_server). To use it on your application, just add it to `mix.exs` as a test dependency.
+
+```elixir
+def deps do
+  [{:fake_server, "~> 0.4.1", only: :test}]
+end
+```
+## How it works
+
+First, you create some `FakeServer.Status`. Those status are the way the server will respond when a request arrives. In a status you specify the response code and body. You can add some headers to the response as well.
+
+```elixir
+iex(1)> FakeServer.Status.create(:status200, %{response_code: 200, response_body: "Hello World"})
+:ok
+iex(2)> FakeServer.Status.create(:status400, %{response_code: 400, response_body: "bad_request"})
+:ok
+iex(3)> FakeServer.Status.create(:status500, %{response_code: 500, response_body: "internal_server_error"})
+:ok
+```
+*Multiple servers can use the same status, so you just need to define it once.*
+
+Then, you create a server that uses some of the statuses available:
+```elixir
+iex(4)> FakeServer.run(:server_name, [:status200, :status500, :status400])
+{:ok, "127.0.0.1:8259"}
+```
+Now you have an HTTP server running; You can access the server using the address returned by `FakeServer.run/2` function. This new server will respond with the status specified in the list you provided. The first request will get the first status as a response, and so on. When the server responds with a status, it is removed from the list and the server will respond with the next status.
+
+```bash
+$ curl 127.0.0.1:8259
+Hello World
+$ curl 127.0.0.1:8259
+internal_server_error
+$ curl 127.0.0.1:8259
+bad_request
+```
+
+If the list empties, the request will get a default response:
+```bash
+$ curl 127.0.0.1:8259
+"status": "no more actions"
+```
+
+## Using it on your tests
+
+The primary use of FakeServer is on tests. It can simplify some complex to test scenarios, like timeouts, external servers instability, cache usage, and many others. Just be creative :)
+
+Here are some usage examples:
 
 **Important:** From version *0.2.1* to *0.3.0*, `FakeServer.Server` was replaced by `FakeServer`
-
-## Basic Usage
-
-FakeServer is foccused on common scenarios that are difficult to simulate on a test, like:
-
-1. Test how your application behaves when an external service responds with multiple error codes;
-2. Validate if your application access cache, or serves stale when the external server is down
-3. Test retries
-4. Verify timeouts
-5. Multiple servers responses
-
-Just be creative, almost any scenario can be simulated with FakeServer, all with a simple and easy interface.
 
 ```elixir
 ### test/test_helper.exs
@@ -95,13 +130,5 @@ defmodule UserTest do
   end
 end
 ```
-
-## Installation
-
-FakeServer is available on [Hex](https://hex.pm/packages/fake_server). To use it on your application, just add it to `mix.exs` as a test dependency.
-
-```elixir
-def deps do
-  [{:fake_server, "~> 0.4.1", only: :test}]
-end
-```
+## Documentation
+Detailed documentation is available on [Hexdocs](https://hexdocs.pm/fake_server/api-reference.html)
