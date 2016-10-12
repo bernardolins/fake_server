@@ -21,7 +21,7 @@ defmodule FakeServer.Handler do
     end
   end
 
-  defp default_response, do: %{response_code: 200, response_body: ~s<"status": "no more actions">}
+  defp default_response, do: %{response_code: 200, response_body: ~s<"status": "no more actions">, response_headers: []}
 
   defp get_response(response) do
     case FakeServer.Status.get(response) do
