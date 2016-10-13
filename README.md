@@ -3,7 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/bernardolins/fake_server/badge.svg?branch=master)](https://coveralls.io/github/bernardolins/fake_server?branch=master)
 [![Inline docs](http://inch-ci.org/github/bernardolins/fake_server.svg?branch=master&style=shields)](http://inch-ci.org/github/bernardolins/fake_server)
 
-FakeServer is a simple Elixir library that helps you to mock web requests. 
+FakeServer is a simple Elixir library that helps you to mock web requests.
 
 ## Installation
 
@@ -93,9 +93,8 @@ defmodule UserTest do
   end
 
   test "#get returns user if the external server responds 200" do
-    # add the status sequence will want the server to respond with
-    # the fake server will respond with the first status on the list
-    # after that, that status will be removed
+    # add the status sequence you want the server to respond with
+    # the fake server will respond with the first status on the list and remove it from the list
     # this repeats for every request you make
     # if the list empties, the server will respond 200.
     FakeServer.modify_behavior(:external_server, :status200)
@@ -105,7 +104,7 @@ defmodule UserTest do
   end
 
   test "#get retry up to 3 times when external server responds with 500" do
-    {:ok, address} = FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status200])
+    FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status200])
 
     # you can easily test a retry scenario, where one call to the external service makes multiple requests
     assert User.get == %{username: "mr_user"}
@@ -113,12 +112,12 @@ defmodule UserTest do
 
   test "#get returns timeout after 3 retries" do
     # another retry example, this time with a timeout scenario
-    {:ok, address} = FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status500])
+    FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status500])
     assert User.get == %{error: "timeout", code: 408}
   end
 
   test "#get serves stale when external server is down" do
-    {:ok, address} = FakeServer.modify_behavior(:external_server, [:status200, :status500])
+    FakeServer.modify_behavior(:external_server, [:status200, :status500])
 
     # our application saves cache on the first successfull response
     # so we make a get request with a 200 response from fake server to save some cache
