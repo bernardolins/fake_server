@@ -13,7 +13,9 @@ defmodule FakeServer.StatusTest do
   end
 
   test "#create return error if name is not atom" do
-    assert FakeServer.Status.create("some_invalid_name", @valid_behavior) == {:error, {:invalid_status_name, "some_invalid_name"}}
+    assert_raise RuntimeError, "Status name 'some_invalid_name' must be an atom", fn ->
+      FakeServer.Status.create("some_invalid_name", @valid_behavior)
+    end
   end
 
   test "#create returns error if name not provided" do

@@ -42,7 +42,10 @@ defmodule FakeServerTest do
   end
 
   test "#run return error when one or more status name are not atoms" do
-    assert FakeServer.run(:external, ["some_status"]) == {:error, {:invalid_status_name, "some_status"}}
+    assert_raise RuntimeError, "Status name 'some_status' must be an atom", fn ->
+      FakeServer.run(:external, ["some_status"])
+    end
+    
     FakeServer.stop(:external)
   end
 
@@ -85,7 +88,9 @@ defmodule FakeServerTest do
 
   test "#modify_behavior returns invalid_status_name if one or more status name are invalid" do
     FakeServer.run(:external, [])
-    assert FakeServer.modify_behavior(:external, "status_invalid") == {:error, {:invalid_status_name, "status_invalid"}}
+    assert_raise RuntimeError, "Status name 'some_status' must be an atom", fn ->
+      FakeServer.modify_behavior(:external, "some_status")
+    end
     FakeServer.stop(:external)
   end
 

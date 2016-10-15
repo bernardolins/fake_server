@@ -101,7 +101,7 @@ defmodule FakeServer.Status do
   def validate_name(name) do
     case is_atom(name) do
       true -> name
-      false -> {:error, {:invalid_status_name, name}}
+      false -> raise "Status name '#{name}' must be an atom"
     end
   end
 
