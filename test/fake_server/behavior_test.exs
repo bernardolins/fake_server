@@ -32,7 +32,9 @@ defmodule FakeServer.BehaviorTest do
   end
 
   test "#create returns error when name is not an atom" do
-    assert FakeServer.Behavior.create("test_behavior", @invalid_status_list) == {:error, :invalid_name}
+    assert_raise FakeServer.NameError, "Name 'test_behavior' must be an atom", fn -> 
+      FakeServer.Behavior.create("test_behavior", @invalid_status_list)
+    end
   end
 
   test "#destroy destroys a behavior if the behavior exists" do

@@ -13,7 +13,7 @@ defmodule FakeServer.StatusTest do
   end
 
   test "#create return error if name is not atom" do
-    assert_raise RuntimeError, "Status name 'some_invalid_name' must be an atom", fn ->
+    assert_raise FakeServer.NameError, "Status name 'some_invalid_name' must be an atom", fn ->
       FakeServer.Status.create("some_invalid_name", @valid_behavior)
     end
   end
