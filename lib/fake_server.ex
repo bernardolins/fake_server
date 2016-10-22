@@ -100,18 +100,17 @@ defmodule FakeServer do
 
   defp create_behavior(name, status_list) do
     case FakeServer.Behavior.create(name, status_list) do
-      {:error, reason} -> {:error, reason}
+      {:error, :already_exists} -> raise FakeServer.ServerError, message: "The server '#{name}' already exists"
+      {:error, reason} when is_tuple(reason) -> raise FakeServer.ServerError, message: "#{Enum.join(Tuple.to_list(reason), " ")}"
+      {:error, reason} -> raise FakeServer.ServerError, message: "#{reason}"
       {:ok, name} -> [behavior: name]
     end
   end
 
-  defp create_routes({:error, reason}), do: {:error, reason}
   defp create_routes(hander_opts), do: [{:_, FakeServer.Handler, hander_opts}]
 
-  defp add_to_router({:error, reason}), do: {:error, reason}
   defp add_to_router(routes), do: :cowboy_router.compile([{:_, routes}])  
 
-  defp server_config({:error, reason}, _opts), do: {:error, reason}
   defp server_config(routes, %{port: port}) do
     [port: port,
      routes: routes,
@@ -123,12 +122,11 @@ defmodule FakeServer do
      max_connections: 100]
   end
 
-  defp start_server({:error, reason}, _name), do: {:error, reason}
   defp start_server(config, name) do
     case :cowboy.start_http(name, @max_connections, [port: config[:port]], [env: [dispatch: config[:routes]]]) do
       {:ok, _} -> {:ok, server_address(config[:port])}
-      {:error, :already_started} -> {:error, :already_started}
-      {:error, _} -> {:error, :unknown_error}
+      {:error, :already_exists} -> raise FakeServer.ServerError, message: "The server '#{name} already exists'"
+      {:error, _} -> raise FakeServer.ServerError
     end
   end
 

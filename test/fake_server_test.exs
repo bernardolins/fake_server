@@ -30,14 +30,18 @@ defmodule FakeServerTest do
     FakeServer.stop(:external)
   end
 
-  test "#run return error when server already exists" do
+  test "#run raise error when server already exists" do
     FakeServer.run(:external, [:status_200])
-    assert FakeServer.run(:external, [:status_200]) == {:error, :already_exists}
+    assert_raise FakeServer.ServerError, "The server 'external' already exists", fn ->
+      assert FakeServer.run(:external, [:status_200]) == {:error, :already_exists}
+    end
     FakeServer.stop(:external)
   end
 
-  test "#run return error when one or more invalid status are passed as argument" do
-    assert FakeServer.run(:external, [:status_200, :some_status]) == {:error, {:invalid_status, :some_status}}
+  test "#run raise error when one or more invalid status are passed as argument" do
+    assert_raise FakeServer.ServerError, "invalid_status some_status", fn ->
+      FakeServer.run(:external, [:status_200, :some_status])
+    end
     FakeServer.stop(:external)
   end
 
