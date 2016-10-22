@@ -38,7 +38,7 @@ defmodule FakeServer.Mixfile do
 
 	defp description do
     """
-    FakeServer is a simple HTTP server used to mock external services responses on your tests.
+    Mock HTTP requests.
     """
   end
 
