@@ -34,8 +34,7 @@ defmodule FakeServer.HandlerTest do
 
   test "#handle passes correct status code, body and headers to cowboy to reply with" do
     FakeServer.Behavior.create(:behavior, [:status_200])
-    response_headers = Map.to_list(@response_headers)
-    with_mock :cowboy_req, [reply: fn(@response_code, response_headers, @response_body, _) -> {:ok, :replied}  end] do
+    with_mock :cowboy_req, [reply: fn(@response_code, _, @response_body, _) -> {:ok, :replied}  end] do
       assert FakeServer.Handler.handle(@conn, @valid_opts) == {:ok, @conn, @valid_opts}
     end
     FakeServer.Behavior.destroy(:behavior)
