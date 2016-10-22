@@ -3,7 +3,7 @@ defmodule FakeServer.Mixfile do
 
   def project do
     [app: :fake_server,
-     version: "0.4.1",
+     version: "0.5.0",
      elixir: "~> 1.2",
      description: description,
      package: package,

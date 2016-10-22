@@ -11,7 +11,7 @@ FakeServer is available on [Hex](https://hex.pm/packages/fake_server). To use it
 
 ```elixir
 def deps do
-  [{:fake_server, "~> 0.4.1", only: :test}]
+  [{:fake_server, "~> 0.5.0", only: :test}]
 end
 ```
 ## How it works
@@ -68,8 +68,8 @@ FakeServer.Status.create(:status200, %{response_code: 200, response_body: ~s<"us
 FakeServer.Status.create(:status500, %{response_code: 500, response_body: ~s<"error": "internal server error">})
 FakeServer.Status.create(:status403, %{response_code: 403, response_body: ~s<"error": "forbidden">})
 
-# you can also pass `response_header` (optional):
-FakeServer.Status.create(:status200, %{response_code: 200, response_body: "OK", resonse_headers: %{"Conent-Length": 5}})
+# you can also pass `response_headers` (optional):
+FakeServer.Status.create(:status404, %{response_code: 404, response_body: ~s<"error": "not found">, response_headers: %{"Content-Length": 5}})
 
 
 ### test/user_test.exs
@@ -93,10 +93,8 @@ defmodule UserTest do
   end
 
   test "#get returns user if the external server responds 200" do
-    # add the status sequence you want the server to respond with
-    # the fake server will respond with the first status on the list and remove it from the list
-    # this repeats for every request you make
-    # if the list empties, the server will respond 200.
+    # If you created a global server, you just need to modify the server behavior on each test case
+    # just add the status sequence you want the server to return
     FakeServer.modify_behavior(:external_server, :status200)
 
     # make the request to the fake server and validate it works
@@ -106,7 +104,7 @@ defmodule UserTest do
   test "#get retry up to 3 times when external server responds with 500" do
     FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status200])
 
-    # you can easily test a retry scenario, where one call to the external service makes multiple requests
+    # in our application, one User.get call makes multiple requests to the server when it returns 500
     assert User.get == %{username: "mr_user"}
   end
 
@@ -116,15 +114,15 @@ defmodule UserTest do
     assert User.get == %{error: "timeout", code: 408}
   end
 
-  test "#get serves stale when external server is down" do
+  test "#get serves stale content when external server is down if there is some cache available" do
     FakeServer.modify_behavior(:external_server, [:status200, :status500])
 
     # our application saves cache on the first successfull response
     # so we make a get request with a 200 response from fake server to save some cache
     User.get
 
-    # the second response from fake server is 500, but there is cache!
-    # that's how we know the stale is working
+    # the second response from fake server is 500, but since there's some cache, the response is correct
+    # that's how we know the cache is working
     assert User.get == %{username: "mr_user"}
   end
 end
