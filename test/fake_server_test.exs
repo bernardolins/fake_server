@@ -61,7 +61,9 @@ defmodule FakeServerTest do
 
   test "#run returns error when coyboy application failed to start" do
     with_mock Application, [ensure_all_started: fn(:cowboy) -> {:error, :any_error} end] do
-      assert FakeServer.run(:server, []) == {:error, :server_could_not_be_started}
+      assert_raise FakeServer.ServerError, "An error occurred while starting the server", fn ->
+        FakeServer.run(:external, ["some_status"])
+      end
     end
   end
 
