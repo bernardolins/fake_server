@@ -75,7 +75,8 @@ defmodule FakeServer.BehaviorTest do
     assert FakeServer.Behavior.modify(:test_behavior, [:status_invalid]) == {:error, {:invalid_status, :status_invalid}}
   end
 
-  test "#modify returns error if status list is empty" do
-    assert FakeServer.Behavior.modify(:test_behavior, []) == {:error, :no_status}
+  test "#modify does not returns error if status list is empty" do
+    FakeServer.Behavior.create(:test_behavior, [])
+    assert FakeServer.Behavior.modify(:test_behavior, []) == :ok
   end
 end

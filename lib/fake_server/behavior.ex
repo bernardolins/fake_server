@@ -25,7 +25,6 @@ defmodule FakeServer.Behavior do
     end
   end
 
-  def modify(_name, []), do: {:error, :no_status}
   def modify(name, status_list) do
     case validate_status(status_list) do
       :ok ->
