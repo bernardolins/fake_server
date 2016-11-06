@@ -38,7 +38,7 @@ defmodule FakeServer do
   {:ok, "127.0.0.1:7293"}
   ```
   """
-  def run(name, status_list, opts) do
+  def run(name, status_list, opts \\ %{}) do
     case Application.ensure_all_started(:cowboy) do
       {:ok, _} ->
         status_list = List.wrap(status_list)
@@ -48,14 +48,9 @@ defmodule FakeServer do
         |> add_to_router
         |> server_config(opts)
         |> start_server(name)
-      {:error, _} -> {:error, :server_could_not_be_started}
+      {:error, _} -> raise FakeServer.ServerError, message: "An error occurred while starting the server"
     end
   end 
-
-  @doc """ 
-  Just an alias to run/3 with empty options.
-  """
-  def run(name, status_list), do: run(name, status_list, %{})
 
   @doc """
   Stops a running server. You must provide the server `name`.
@@ -92,7 +87,6 @@ defmodule FakeServer do
   {:error, :no_status}
   ```
   """
-  def modify_behavior(_name, []), do: {:error, :empty_status_list}
   def modify_behavior(name, new_status_list) do
     new_status_list = List.wrap(new_status_list)
     FakeServer.Behavior.modify(name, new_status_list)
