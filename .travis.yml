@@ -4,7 +4,6 @@ elixir:
   - 1.3.2
 script:
   - mix coveralls.travis
-  - mix credo 
 env:
   - MIX_ENV=test
 after_script:
