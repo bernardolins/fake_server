@@ -95,8 +95,9 @@ defmodule FakeServer do
   defp create_behavior(name, status_list) do
     case FakeServer.Behavior.create(name, status_list) do
       {:error, :already_exists} -> raise FakeServer.ServerError, message: "The server '#{name}' already exists"
-      {:error, reason} when is_tuple(reason) -> raise FakeServer.ServerError, message: "#{Enum.join(Tuple.to_list(reason), " ")}"
-      {:error, reason} -> raise FakeServer.ServerError, message: "#{reason}"
+      {:error, :invalid_name} -> raise FakeServer.NameError, message: "Server name '#{name}' must be an atom"
+      {:error, {:invalid_status, status_name}} -> raise FakeServer.ServerError, message: "Invalid status: '#{status_name}'"
+      {:error, _} -> raise FakeServer.ServerError
       {:ok, name} -> [behavior: name]
     end
   end
@@ -119,7 +120,7 @@ defmodule FakeServer do
   defp start_server(config, name) do
     case :cowboy.start_http(name, @max_connections, [port: config[:port]], [env: [dispatch: config[:routes]]]) do
       {:ok, _} -> {:ok, server_address(config[:port])}
-      {:error, :already_exists} -> raise FakeServer.ServerError, message: "The server '#{name} already exists'"
+      {:error, :already_exists} -> raise FakeServer.ServerError, message: "The server '#{name}' already exists"
       {:error, _} -> raise FakeServer.ServerError
     end
   end

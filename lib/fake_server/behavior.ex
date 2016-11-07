@@ -40,10 +40,11 @@ defmodule FakeServer.Behavior do
   defp validate_name name do
     case is_atom name do
       true -> name
-      false -> raise FakeServer.NameError, message: "Name '#{name}' must be an atom"
+      false -> {:error, :invalid_name}
     end
   end
 
+  defp validate_status_list({:error, reason}, _), do: {:error, reason}
   defp validate_status_list(name, status_list) do
     case validate_status(status_list) do
       :ok -> create_behavior(name, status_list)

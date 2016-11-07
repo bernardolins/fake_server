@@ -38,14 +38,45 @@ defmodule FakeServerTest do
     FakeServer.stop(:external)
   end
 
+  test "#run raise error when server name is not an atom" do
+    assert_raise FakeServer.NameError, "Server name 'invalid_name' must be an atom", fn ->
+      FakeServer.run("invalid_name", [:status_200])
+    end
+    FakeServer.stop(:external)
+  end
+
   test "#run raise error when one or more invalid status are passed as argument" do
-    assert_raise FakeServer.ServerError, "invalid_status some_status", fn ->
+    assert_raise FakeServer.ServerError, "Invalid status: 'some_status'", fn ->
       FakeServer.run(:external, [:status_200, :some_status])
     end
     FakeServer.stop(:external)
   end
 
-  test "#run return error when one or more status name are not atoms" do
+  test "#run raise error when an unknown error happens on the server" do
+    with_mock FakeServer.Behavior, [create: fn(_, _) -> {:error, :any_error} end] do
+      assert_raise FakeServer.ServerError, "An error happened on the server", fn ->
+        FakeServer.run(:external, [])
+      end
+    end
+  end
+
+  test "#run raise error when cowboy server already exists" do
+    with_mock :cowboy, [start_http: fn(_, _, _, _) -> {:error, :already_exists} end] do
+      assert_raise FakeServer.ServerError, "The server 'external' already exists", fn ->
+        FakeServer.run(:external, [])
+      end
+    end
+  end
+
+  test "#run raise error when cowboy server returns an unknown error" do
+    with_mock :cowboy, [start_http: fn(_, _, _, _) -> {:error, :any_error} end] do
+      assert_raise FakeServer.ServerError, "An error happened on the server", fn ->
+        FakeServer.run(:external, [])
+      end
+    end
+  end
+  
+  test "#run return error when one or more status names are not atoms" do
     assert_raise FakeServer.NameError, "Status name 'some_status' must be an atom", fn ->
       FakeServer.run(:external, ["some_status"])
     end
@@ -53,9 +84,9 @@ defmodule FakeServerTest do
     FakeServer.stop(:external)
   end
 
-  test "#run with default port creates a server on the passed port" do
-    {:ok, address} = FakeServer.run(:external, :status_200, %{port: 5000})
-    assert address == "127.0.0.1:5000"
+  test "#run with default port creates a server on the given port" do
+    {:ok, address} = FakeServer.run(:external, :status_200, %{port: 5445})
+    assert address == "127.0.0.1:5445"
     FakeServer.stop(:external)
   end
 
