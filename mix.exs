@@ -5,10 +5,10 @@ defmodule FakeServer.Mixfile do
     [app: :fake_server,
      version: "0.5.0",
      elixir: "~> 1.3",
-     description: description,
-     package: package,
+     description: description(),
+     package: package(),
      test_coverage: [tool: ExCoveralls],
-     deps: deps]
+     deps: deps()]
   end
 
   # Configuration for the OTP application

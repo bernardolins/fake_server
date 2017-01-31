@@ -112,7 +112,7 @@ defmodule FakeServer do
      max_connections: 100]
   end
   defp server_config(routes, %{}) do
-    [port: choose_port,
+    [port: choose_port(),
      routes: routes,
      max_connections: 100]
   end
@@ -126,11 +126,11 @@ defmodule FakeServer do
   end
 
   defp choose_port do
-    case :ranch_tcp.listen(ip: @ip, port: random_port_number) do
+    case :ranch_tcp.listen(ip: @ip, port: random_port_number()) do
       {:ok, socket} ->
         :erlang.port_close(socket)
-        random_port_number
-      {:error, :eaddrinuse} -> choose_port
+        random_port_number()
+      {:error, :eaddrinuse} -> choose_port()
     end
   end
 

@@ -7,7 +7,6 @@ defmodule FakeServer.HandlerTest do
   @conn {:http_req}
   @valid_opts [behavior: :behavior]
   @invalid_opts [no_behavior: :behavior]
-  @inexistent_status_opts [behavior: :invalid_behavior]
 
   @response_code 200
   @response_body "test body"
