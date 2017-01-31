@@ -4,7 +4,7 @@ defmodule FakeServer.Mixfile do
   def project do
     [app: :fake_server,
      version: "0.5.0",
-     elixir: "~> 1.2",
+     elixir: "~> 1.3",
      description: description,
      package: package,
      test_coverage: [tool: ExCoveralls],
