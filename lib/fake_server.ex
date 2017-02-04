@@ -1,6 +1,6 @@
 defmodule FakeServer do
   @moduledoc """
-  The server itself. 
+  The server itself.
   """
 
   @ip {127, 0, 0, 1}
@@ -10,7 +10,7 @@ defmodule FakeServer do
 
   @doc """
   This function starts a new server. You must provide:
-  - a `name` to the server: This identifies the server, and is used to shut it down. 
+  - a `name` to the server: This identifies the server, and is used to shut it down.
   - a `status_list`: This is an array containing the statuses of the server. Each request to the server will receive as response the first status on this list. The status is then removed from the list. If no more statuses are available, the server will respond `HTTP 200`.
   - some `options`. Currently the only option accepted is `port`.
 
@@ -50,7 +50,7 @@ defmodule FakeServer do
         |> start_server(name)
       {:error, _} -> raise FakeServer.ServerError, message: "An error occurred while starting the server"
     end
-  end 
+  end
 
   @doc """
   Stops a running server. You must provide the server `name`.
@@ -104,7 +104,7 @@ defmodule FakeServer do
 
   defp create_routes(hander_opts), do: [{:_, FakeServer.Handler, hander_opts}]
 
-  defp add_to_router(routes), do: :cowboy_router.compile([{:_, routes}])  
+  defp add_to_router(routes), do: :cowboy_router.compile([{:_, routes}])
 
   defp server_config(routes, %{port: port}) do
     [port: port,
@@ -126,10 +126,11 @@ defmodule FakeServer do
   end
 
   defp choose_port do
-    case :ranch_tcp.listen(ip: @ip, port: random_port_number()) do
+    port = random_port_number()
+    case :ranch_tcp.listen(ip: @ip, port: port) do
       {:ok, socket} ->
         :erlang.port_close(socket)
-        random_port_number()
+        port
       {:error, :eaddrinuse} -> choose_port()
     end
   end
