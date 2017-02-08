@@ -3,6 +3,10 @@ defmodule FakeServer.Agents.RouterAgent do
     Agent.start_link(fn -> [] end, name: __MODULE__)
   end
 
+  def stop do
+    Agent.stop(__MODULE__)
+  end
+
   def put_route(route) when is_bitstring(route) do
     Agent.update(__MODULE__, fn(routes) -> [route|routes] end)
   end

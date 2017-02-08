@@ -3,10 +3,12 @@ defmodule FakeServer.HTTP.Server do
   @base_ip {127, 0, 0, 1}
 
   def run(config \\ []) do 
+    port = config[:port] || choose_port()
     :cowboy.start_http(__MODULE__, 
                        100, 
-                       [port: config[:port] || choose_port()], 
+                       [port: port], 
                        [env: [dispatch: set_router()]])
+    {:ok, port}
   end
 
   def stop, do: :cowboy.stop_listener(__MODULE__)

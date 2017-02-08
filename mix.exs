@@ -7,6 +7,7 @@ defmodule FakeServer.Mixfile do
      elixir: "~> 1.3",
      description: description(),
      package: package(),
+     aliases: aliases(),
      test_coverage: [tool: ExCoveralls],
      deps: deps()]
   end
@@ -47,5 +48,9 @@ defmodule FakeServer.Mixfile do
      maintainers: ["Bernardo Lins"],
      licenses: ["Apache 2.0"],
      links: %{"GitHub" => "https://github.com/bernardolins/fake_server"}]
+  end
+
+  defp aliases do
+    [test: "test --no-start"]
   end
 end
