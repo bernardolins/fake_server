@@ -1,0 +1,6 @@
+{
+  "skip_files": [
+    "lib/fake_server/fake_server.ex"
+  ],
+  "treat_no_relevant_lines_as_covered": true
+}
