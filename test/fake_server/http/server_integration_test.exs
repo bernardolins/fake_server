@@ -50,5 +50,21 @@ defmodule FakeServer.HTTP.ServerTest do
       assert response |> elem(0) |> elem(1) == 400
       FakeServer.HTTP.Server.stop
     end
+
+    test "the server routes can be updated without server restart" do
+      RouterAgent.put_route("/test")
+      {:ok, port} = FakeServer.HTTP.Server.run
+
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 200
+
+      RouterAgent.put_route("/test/new")
+      FakeServer.HTTP.Server.update_router
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 404
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test/new', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 200
+      FakeServer.HTTP.Server.stop
+    end
   end
 end
