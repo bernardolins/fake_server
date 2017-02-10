@@ -11,121 +11,65 @@ FakeServer is available on [Hex](https://hex.pm/packages/fake_server). To use it
 
 ```elixir
 def deps do
-  [{:fake_server, "~> 0.5.0", only: :test}]
+  [{:fake_server, "~> 1.0.0", only: :test}]
 end
 ```
 ## How it works
 
-First, you create some `FakeServer.Status`. Those status are the way the server will respond when a request arrives. In a status you specify the response code and body. You can add some headers to the response as well.
-
 ```elixir
-iex(1)> FakeServer.Status.create(:status200, %{response_code: 200, response_body: "Hello World"})
-:ok
-iex(2)> FakeServer.Status.create(:status400, %{response_code: 400, response_body: "bad_request"})
-:ok
-iex(3)> FakeServer.Status.create(:status500, %{response_code: 500, response_body: "internal_server_error"})
-:ok
-```
-*Multiple servers can use the same status, so you just need to define it once.*
+# test/support/response_factories.exs
 
-Then, you create a server that uses some of the statuses available:
-```elixir
-iex(4)> FakeServer.run(:server_name, [:status200, :status500, :status400])
-{:ok, "127.0.0.1:8259"}
-```
-Now you have an HTTP server running; You can access the server using the address returned by `FakeServer.run/2` function. This new server will respond with the status specified in the list you provided. The first request will get the first status as a response, and so on. When the server responds with a status, it is removed from the list and the server will respond with the next status.
+defmodule MyApp.ResponseFactories do
+  use FakeServer
+end
 
-```bash
-$ curl 127.0.0.1:8259
-Hello World
-$ curl 127.0.0.1:8259
-internal_server_error
-$ curl 127.0.0.1:8259
-bad_request
-```
+# test/my_app/car_api_gateway_test.exs
 
-If the list empties, the request will get a default response:
-```bash
-$ curl 127.0.0.1:8259
-"status": "no more actions"
-```
+defmodule CarAPIGatewayTest do
+  use ExUnit.Case, async: true
+  import FakeServer
 
-## Using it on your tests
+  describe "#get" do
+    test_with_server "return an array containing all cars" do
+      Application.set_env :my_app, :car_api_address, fake_server[:address]
+      cars_json = ~s<[{"model": "Camaro", "manufacturer": "Chevrolet"}, {"model": "Mustang", "manufacturer": "Ford"}]>
+      route "/cars.json" do
+        FakeServer.HTTP.Response.ok(body: cars_json)
+      end
 
-The primary use of FakeServer is on tests. It can simplify some complex to test scenarios, like timeouts, external servers instability, cache usage, and many others. Just be creative :)
+      [car1, car2] = MyApp.CarAPIGateway.get
+      assert car1[:model] == "Camaro"
+      assert car1[:manufacturer] == "Chevrolet"
 
-Here are some usage examples:
+      assert car2[:model] == "Mustang"
+      assert car2[:manufacturer] == "Ford"
+    end
 
-**Important:** From version *0.2.1* to *0.3.0*, `FakeServer.Server` was replaced by `FakeServer`
+    test_with_server "save cache when response is 200" do
+      Application.set_env :my_app, :car_api_address, fake_server[:address]
+      route "/cars.json" do
+        FakeServer.HTTP.Response.ok
+      end
 
-```elixir
-### test/test_helper.exs
-ExUnit.start()
+      MyApp.CarAPI.Gateway.get
+      MyApp.CarAPI.Gateway.get
+      MyApp.CarAPI.Gateway.get
 
-# create some status that your external server could respond with
-# you just need to do it once for you entire test suite.
-FakeServer.Status.create(:status200, %{response_code: 200, response_body: ~s<"username": "mr_user">})
-FakeServer.Status.create(:status500, %{response_code: 500, response_body: ~s<"error": "internal server error">})
-FakeServer.Status.create(:status403, %{response_code: 403, response_body: ~s<"error": "forbidden">})
+      assert fake_server[:hits] == 1
+    end
 
-# you can also pass `response_headers` (optional):
-FakeServer.Status.create(:status404, %{response_code: 404, response_body: ~s<"error": "not found">, response_headers: %{"Content-Length": 5}})
+    # cyclic will cause the server to repeat
+    test_with_server "dont store cars on cache when response is not 200", [respond_with: FakeServer.HTTP.Response.bad_request] do
+      Application.set_env :my_app, :car_api_address, fake_server[:address]
 
+      MyApp.CarAPI.Gateway.get
+      MyApp.CarAPI.Gateway.get
+      MyApp.CarAPI.Gateway.get
 
-### test/user_test.exs
-defmodule UserTest do
-  use ExUnit.Case
-
-  setup_all do
-    # you can run a single server on a test file
-    # start a fake server with an empty status_list
-    # you can ignore the third param if you want the server to run on a random port
-    # when using a global server, make sure :async option is set to false on ExUnit
-    {:ok, address} = FakeServer.run(:external_server, [], %{port: 5000})
-
-    # point your application to the new fake server
-    System.put_env(:external_server_url, address)
-
-    # you can use ExUnit callback to stop the server
-    on_exit fn ->
-      FakeServer.stop(:external_server)
+      assert fake_server_hits == 3
     end
   end
-
-  test "#get returns user if the external server responds 200" do
-    # If you created a global server, you just need to modify the server behavior on each test case
-    # just add the status sequence you want the server to return
-    FakeServer.modify_behavior(:external_server, :status200)
-
-    # make the request to the fake server and validate it works
-    assert User.get == %{username: "mr_user"}
-  end
-
-  test "#get retry up to 3 times when external server responds with 500" do
-    FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status200])
-
-    # in our application, one User.get call makes multiple requests to the server when it returns 500
-    assert User.get == %{username: "mr_user"}
-  end
-
-  test "#get returns timeout after 3 retries" do
-    # another retry example, this time with a timeout scenario
-    FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status500])
-    assert User.get == %{error: "timeout", code: 408}
-  end
-
-  test "#get serves stale content when external server is down if there is some cache available" do
-    FakeServer.modify_behavior(:external_server, [:status200, :status500])
-
-    # our application saves cache on the first successfull response
-    # so we make a get request with a 200 response from fake server to save some cache
-    User.get
-
-    # the second response from fake server is 500, but since there's some cache, the response is correct
-    # that's how we know the cache is working
-    assert User.get == %{username: "mr_user"}
-  end
 end
-```
+
 ## Documentation
 Detailed documentation is available on [Hexdocs](https://hexdocs.pm/fake_server/api-reference.html)
