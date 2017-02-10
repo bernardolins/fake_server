@@ -10,15 +10,14 @@ defmodule FakeServer.Agents.ResponseAgent do
   def put_response_list(responses) do
     Agent.update(__MODULE__, fn(_) -> List.wrap(responses) end)
   end
-  
+
   def take_next do
     case Agent.get(__MODULE__, fn(responses) -> responses end) do
-      [] -> 
+      [] ->
         FakeServer.HTTP.Response.default()
-      [response|responses] -> 
+      [response|responses] ->
         Agent.update(__MODULE__, fn(_) -> responses end)
         response
     end
   end
-
 end
