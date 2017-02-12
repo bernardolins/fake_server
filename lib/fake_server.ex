@@ -10,19 +10,23 @@ defmodule FakeServer do
   defmacro test_with_server(test_description, opts \\ [], do: test_block) do
     quote do
       test unquote(test_description) do
-        {:ok, port} = Server.run
+        {:ok, server_name, port} = Server.run
+
         var!(fake_server_address) = "#{unquote(@base_address)}:#{port}"
+        var!(fake_server) = server_name
+
         unquote(test_block)
-        Server.stop
+
+        Server.stop(server_name)
       end
     end
   end
 
-  defmacro route(route, do: response_block) do
+  defmacro route(fake_server_name, route, do: response_block) do
     quote do
-      RouterAgent.put_route(unquote(route))
-      ResponseAgent.put_response_list(unquote(response_block))
-      Server.update_router
+      RouterAgent.put_route(unquote(fake_server_name), unquote(route))
+      ResponseAgent.put_response_list(unquote(fake_server_name), unquote(route), unquote(response_block))
+      Server.update_router(unquote(fake_server_name))
     end
   end
 end

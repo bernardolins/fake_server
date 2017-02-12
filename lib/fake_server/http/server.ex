@@ -3,23 +3,23 @@ defmodule FakeServer.HTTP.Server do
   @base_ip {127, 0, 0, 1}
 
   def run(config \\ []) do
+    server_name = config[:name] || random_server_name()
     port = config[:port] || choose_port()
-    :cowboy.start_http(__MODULE__,
-                       100,
-                       [port: port],
-                       [env: [dispatch: set_router()]])
-    {:ok, port}
+    router = set_router(server_name, [name: server_name])
+
+    :cowboy.start_http(server_name, 100, [port: port], [env: [dispatch: router]])
+    {:ok, server_name, port}
   end
 
-  def stop, do: :cowboy.stop_listener(__MODULE__)
+  def stop(server_name), do: :cowboy.stop_listener(__MODULE__)
 
-  def update_router do
-    :cowboy.set_env(__MODULE__, :dispatch, set_router)
+  def update_router(server_name) do
+    :cowboy.set_env(server_name, :dispatch, (set_router(server_name)))
   end
 
-  defp set_router do
-    routes = FakeServer.Agents.RouterAgent.take_all
-    |> Enum.map(&({&1, FakeServer.HTTP.Handler, []}))
+  defp set_router(server_name, opts \\ []) do
+    routes = FakeServer.Agents.RouterAgent.take_all(server_name)
+    |> Enum.map(&({&1, FakeServer.HTTP.Handler, [name: server_name]}))
 
     :cowboy_router.compile([{:_, routes}])
   end
@@ -35,4 +35,12 @@ defmodule FakeServer.HTTP.Server do
   end
 
   defp random_port_number, do: @base_port_number + :rand.uniform(5000)
+
+  # thanks http://stackoverflow.com/a/32002566 :)
+  defp random_server_name(length \\ 16) do
+    :crypto.strong_rand_bytes(length)
+    |> Base.url_encode64
+    |> binary_part(0, length)
+    |> String.to_atom
+  end
 end
