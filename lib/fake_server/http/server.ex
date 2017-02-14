@@ -5,6 +5,8 @@ defmodule FakeServer.HTTP.Server do
   def run(config \\ []) do
     server_name = config[:name] || random_server_name()
     port = config[:port] || choose_port()
+
+    FakeServer.Agents.ServerAgent.put_server(server_name)
     router = set_router(server_name, [name: server_name])
 
     :cowboy.start_http(server_name, 100, [port: port], [env: [dispatch: router]])
@@ -18,7 +20,7 @@ defmodule FakeServer.HTTP.Server do
   end
 
   defp set_router(server_name, opts \\ []) do
-    routes = FakeServer.Agents.RouterAgent.take_all(server_name)
+    routes = FakeServer.Agents.ServerAgent.take_server_paths(server_name)
     |> Enum.map(&({&1, FakeServer.HTTP.Handler, [name: server_name]}))
 
     :cowboy_router.compile([{:_, routes}])

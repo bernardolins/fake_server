@@ -3,7 +3,7 @@ defmodule FakeServer.HTTP.Handler do
 
   def handle(conn, opts) do
     route = :cowboy_req.path(conn) |> elem(0)
-    response = FakeServer.Agents.ResponseAgent.take_next(opts[:name], route)
+    response = FakeServer.Agents.ServerAgent.take_next_response_to_path(opts[:name], route)
     :cowboy_req.reply(response.code, response.headers, response.body, conn)
 
     {:ok, conn, opts}
