@@ -8,7 +8,8 @@ defmodule FakeServer.Application do
 
     children = [ 
       worker(FakeServer.Agents.ResponseAgent, []),
-      worker(FakeServer.Agents.RouterAgent, [])
+      worker(FakeServer.Agents.RouterAgent, []),
+      worker(FakeServer.Agents.ServerAgent, [])
     ]   
 
     opts = [strategy: :one_for_one, name: FakeServer.Supervisor]
