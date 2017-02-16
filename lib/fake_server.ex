@@ -2,8 +2,7 @@ defmodule FakeServer do
 
   alias FakeServer.HTTP.Response
   alias FakeServer.HTTP.Server
-  alias FakeServer.Agents.RouterAgent
-  alias FakeServer.Agents.ResponseAgent
+  alias FakeServer.Agents.ServerAgent
 
   @base_address "http://127.0.0.1"
 
@@ -24,8 +23,7 @@ defmodule FakeServer do
 
   defmacro route(fake_server_name, route, do: response_block) do
     quote do
-      RouterAgent.put_route(unquote(fake_server_name), unquote(route))
-      ResponseAgent.put_response_list(unquote(fake_server_name), unquote(route), unquote(response_block))
+      ServerAgent.put_responses_to_path(unquote(fake_server_name), unquote(route), unquote(response_block))
       Server.update_router(unquote(fake_server_name))
     end
   end

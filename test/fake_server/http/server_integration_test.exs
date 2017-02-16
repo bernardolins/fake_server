@@ -1,14 +1,10 @@
 defmodule FakeServer.HTTP.ServerTest do
   use ExUnit.Case
 
-  alias FakeServer.Agents.RouterAgent
-  alias FakeServer.Agents.ResponseAgent
   alias FakeServer.Agents.ServerAgent
   alias FakeServer.HTTP.Response
 
-  setup do
-    RouterAgent.start_link
-    ResponseAgent.start_link
+  setup_all do
     ServerAgent.start_link
     Application.ensure_all_started(:cowboy)
     :ok

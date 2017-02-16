@@ -1,5 +1,4 @@
 defmodule FakeServer.Agents.ServerAgent do
-  require IEx
   def start_link do
     Agent.start_link(fn -> [] end, name: __MODULE__)
   end
@@ -15,7 +14,7 @@ defmodule FakeServer.Agents.ServerAgent do
           server_info = %FakeServer.ServerInfo{name: server_id}
           Keyword.put(servers, server_id, server_info)
         server_info ->
-          server_info
+          servers
       end
     end)
   end
@@ -83,7 +82,7 @@ defmodule FakeServer.Agents.ServerAgent do
     servers = Agent.get(__MODULE__, &(&1))
     case servers[server_id] do
       nil -> nil
-      server_info-> server_info.route_responses[path]
+      server_info -> server_info.route_responses[path]
     end
   end
 end

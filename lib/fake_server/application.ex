@@ -7,8 +7,6 @@ defmodule FakeServer.Application do
     import Supervisor.Spec, warn: false
 
     children = [ 
-      worker(FakeServer.Agents.ResponseAgent, []),
-      worker(FakeServer.Agents.RouterAgent, []),
       worker(FakeServer.Agents.ServerAgent, [])
     ]   
 
