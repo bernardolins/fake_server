@@ -11,6 +11,8 @@ defmodule FakeServer do
       test unquote(test_description) do
         {:ok, server_name, port} = Server.run
 
+        ServerAgent.put_default_response(server_name, unquote(opts[:default_response]))
+
         var!(fake_server_address) = "#{unquote(@base_address)}:#{port}"
         var!(fake_server) = server_name
 

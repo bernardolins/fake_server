@@ -8,9 +8,9 @@ defmodule FakeServer.Agents.ServerAgent do
   end
 
   def put_server(server_id) do
-    Agent.update(__MODULE__, fn(servers) -> 
+    Agent.update(__MODULE__, fn(servers) ->
       case servers[server_id] do
-        nil -> 
+        nil ->
           server_info = %FakeServer.ServerInfo{name: server_id}
           Keyword.put(servers, server_id, server_info)
         server_info ->
@@ -21,21 +21,22 @@ defmodule FakeServer.Agents.ServerAgent do
 
   # :ok or {:error, reason}
   def put_responses_to_path(server_id, path, responses) do
-    Agent.update(__MODULE__, fn(servers) -> 
+    Agent.update(__MODULE__, fn(servers) ->
       case servers[server_id] do
-        nil -> 
+        nil ->
           server_info = %FakeServer.ServerInfo{name: server_id, route_responses: Map.put(%{}, path, responses)}
           Keyword.put(servers, server_id, server_info)
         server_info ->
-          server_info = %FakeServer.ServerInfo{name: server_id, route_responses: Map.put(server_info.route_responses, path, responses)}
+          server_info = %FakeServer.ServerInfo{server_info | route_responses: Map.put(server_info.route_responses, path, responses)}
           Keyword.put(servers, server_id, server_info)
       end
     end)
   end
 
   # :ok or {:error, reason}
+  def put_default_response(_server_id, nil), do: nil
   def put_default_response(server_id, %FakeServer.HTTP.Response{} = default_response) do
-    Agent.update(__MODULE__, fn(servers) -> 
+    Agent.update(__MODULE__, fn(servers) ->
       server_info = servers[server_id]
       updated_server_info = %FakeServer.ServerInfo{server_info | default_response: default_response}
       Keyword.put(servers, server_id, updated_server_info)
@@ -59,7 +60,7 @@ defmodule FakeServer.Agents.ServerAgent do
   # %[%Response{}] or nil
   def take_next_response_to_path(server_id, path) do
     case server_response_list_for_path(server_id, path) do
-      nil -> nil 
+      nil -> nil
       [] -> server_default_response(server_id)
       server_route_list ->
         [next_response|route_responses] = server_route_list
@@ -70,8 +71,8 @@ defmodule FakeServer.Agents.ServerAgent do
 
   # nil or %Response{}
   defp server_default_response(server_id) do
-    Agent.get(__MODULE__, fn(servers) -> 
-      case servers[server_id] do 
+    Agent.get(__MODULE__, fn(servers) ->
+      case servers[server_id] do
         nil -> nil
         server_info -> server_info.default_response
       end

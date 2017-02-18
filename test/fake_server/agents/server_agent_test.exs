@@ -1,8 +1,8 @@
 defmodule FakeServer.Agents.ServerAgentTest do
   use ExUnit.Case
 
-  alias FakeServer.Agents.ServerAgent 
-  alias FakeServer.ServerInfo 
+  alias FakeServer.Agents.ServerAgent
+  alias FakeServer.ServerInfo
   alias FakeServer.HTTP.Response
 
   describe "#start_link" do
@@ -45,7 +45,7 @@ defmodule FakeServer.Agents.ServerAgentTest do
       Agent.update(ServerAgent, fn(_) -> [some_server: server_info] end)
       new_server = Agent.get(ServerAgent, fn(servers) -> servers[:some_server]  end)
       ServerAgent.put_server(:some_server)
-      assert new_server.default_response == Response.bad_request 
+      assert new_server.default_response == Response.bad_request
       assert Agent.get(ServerAgent, &(&1)) == [some_server: server_info]
       ServerAgent.stop
     end
@@ -61,6 +61,16 @@ defmodule FakeServer.Agents.ServerAgentTest do
       ServerAgent.stop
     end
 
+    test "does not overwrite existing server info" do
+      {:ok, _} = ServerAgent.start_link
+      server_info = %ServerInfo{name: :some_server, route_responses: %{"/" => [Response.ok]}, default_response: Response.bad_request}
+      ServerAgent.put_server(:some_server)
+      ServerAgent.put_default_response(:some_server, Response.bad_request)
+      ServerAgent.put_responses_to_path(:some_server, "/", [Response.ok])
+      assert Agent.get(ServerAgent, &(&1)) == [some_server: server_info]
+      ServerAgent.stop
+    end
+
     test "creates an entry if one does not exist" do
       {:ok, _} = ServerAgent.start_link
       server_info = %ServerInfo{name: :some_server, route_responses: %{"/" => [Response.ok]}}
@@ -71,12 +81,20 @@ defmodule FakeServer.Agents.ServerAgentTest do
   end
 
   describe "#put_default_response" do
-    test "the default response on server_info object of an existent entry" do
+    test "configures the default response on server_info object of an existent entry" do
       {:ok, _} = ServerAgent.start_link
       server_info = %ServerInfo{name: :some_server, default_response: Response.bad_request}
       ServerAgent.put_server(:some_server)
       ServerAgent.put_default_response(:some_server, Response.bad_request)
       assert Agent.get(ServerAgent, &(&1)) == [some_server: server_info]
+      ServerAgent.stop
+    end
+
+    test "does nothing if receives nil as default response" do
+      {:ok, _} = ServerAgent.start_link
+      ServerAgent.put_server(:some_server)
+      ServerAgent.put_default_response(:some_server,nil)
+      assert Agent.get(ServerAgent, &(&1)) == [some_server: %ServerInfo{name: :some_server}]
       ServerAgent.stop
     end
   end
