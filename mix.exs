@@ -33,7 +33,7 @@ defmodule FakeServer.Mixfile do
      {:credo, "~> 0.5.0", only: [:dev, :test]},
      {:ex_doc, ">= 0.0.0", only: :dev},
      {:inch_ex, only: :docs},
-     {:cowboy, "~> 1.0.0"}]
+     {:cowboy, "~> 1.1.0"}]
   end
 
 	defp description do
