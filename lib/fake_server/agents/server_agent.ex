@@ -24,10 +24,10 @@ defmodule FakeServer.Agents.ServerAgent do
     Agent.update(__MODULE__, fn(servers) ->
       case servers[server_id] do
         nil ->
-          server_info = %FakeServer.ServerInfo{name: server_id, route_responses: Map.put(%{}, path, responses)}
+          server_info = %FakeServer.ServerInfo{name: server_id, route_responses: Map.put(%{}, path, List.wrap(responses))}
           Keyword.put(servers, server_id, server_info)
         server_info ->
-          server_info = %FakeServer.ServerInfo{server_info | route_responses: Map.put(server_info.route_responses, path, responses)}
+          server_info = %FakeServer.ServerInfo{server_info | route_responses: Map.put(server_info.route_responses, path, List.wrap(responses))}
           Keyword.put(servers, server_id, server_info)
       end
     end)
@@ -43,6 +43,19 @@ defmodule FakeServer.Agents.ServerAgent do
     end)
   end
 
+  def put_controller_to_path(server_id, path, module, controller_name) do
+    Agent.update(__MODULE__, fn(servers) ->
+      case servers[server_id] do
+        nil ->
+          server_info = %FakeServer.ServerInfo{name: server_id, controllers: Map.put(%{}, path, {module, controller_name})}
+          Keyword.put(servers, server_id, server_info)
+        server_info ->
+          server_info = %FakeServer.ServerInfo{server_info | controllers: Map.put(server_info.controllers, path, {module, controller_name})}
+          Keyword.put(servers, server_id, server_info)
+      end
+    end)
+  end
+
   def take_server_info(server_id) do
     Agent.get(__MODULE__, fn(servers) -> servers[server_id] end)
   end
@@ -52,7 +65,8 @@ defmodule FakeServer.Agents.ServerAgent do
     Agent.get(__MODULE__, fn(servers) ->
       case servers[server_id] do
         nil -> nil
-        server_route_list -> Map.keys(server_route_list.route_responses)
+        server_route_list ->
+          Map.keys(server_route_list.route_responses) ++ Map.keys(server_route_list.controllers)
       end
     end)
   end
@@ -67,6 +81,26 @@ defmodule FakeServer.Agents.ServerAgent do
         put_responses_to_path(server_id, path, route_responses)
         next_response
     end
+  end
+
+  def take_path_controller(server_id, path) do
+    servers = Agent.get(__MODULE__, &(&1))
+    case servers[server_id] do
+      nil -> nil
+      server_info -> server_info.controllers[path]
+    end
+  end
+
+  def delete_controller(server_id, path) do
+    Agent.update(__MODULE__, fn(servers) ->
+      case servers[server_id] do
+        nil ->
+          nil
+        server_info ->
+          server_info = %FakeServer.ServerInfo{server_info | controllers: Map.delete(server_info.controllers, path)}
+          Keyword.put(servers, server_id, server_info)
+      end
+    end)
   end
 
   # nil or %Response{}

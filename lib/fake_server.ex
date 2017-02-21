@@ -25,8 +25,14 @@ defmodule FakeServer do
 
   defmacro route(fake_server_name, route, do: response_block) do
     quote do
-      ServerAgent.put_responses_to_path(unquote(fake_server_name), unquote(route), unquote(response_block))
-      Server.update_router(unquote(fake_server_name))
+      case unquote(response_block) do
+        {:controller, module, function_name} ->
+          FakeServer.Agents.ServerAgent.put_controller_to_path(unquote(fake_server_name), unquote(route), module, function_name)
+          Server.update_router(unquote(fake_server_name))
+        list ->
+          ServerAgent.put_responses_to_path(unquote(fake_server_name), unquote(route), list)
+          Server.update_router(unquote(fake_server_name))
+      end
     end
   end
 end

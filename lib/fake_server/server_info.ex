@@ -1,4 +1,4 @@
 defmodule FakeServer.ServerInfo do
-  defstruct [name: nil, route_responses: %{}, default_response: FakeServer.HTTP.Response.default]
+  defstruct [name: nil, route_responses: %{}, controllers: %{}, default_response: FakeServer.HTTP.Response.default]
   @enforce_keys[:name]
 end
