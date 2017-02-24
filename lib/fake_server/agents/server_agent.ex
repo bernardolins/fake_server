@@ -24,10 +24,10 @@ defmodule FakeServer.Agents.ServerAgent do
     Agent.update(__MODULE__, fn(servers) ->
       case servers[server_id] do
         nil ->
-          server_info = %FakeServer.ServerInfo{name: server_id, route_responses: Map.put(%{}, path, List.wrap(responses))}
+          server_info = %FakeServer.ServerInfo{name: server_id, paths: Map.put(%{}, path, List.wrap(responses))}
           Keyword.put(servers, server_id, server_info)
         server_info ->
-          server_info = %FakeServer.ServerInfo{server_info | route_responses: Map.put(server_info.route_responses, path, List.wrap(responses))}
+          server_info = %FakeServer.ServerInfo{server_info | paths: Map.put(server_info.paths, path, List.wrap(responses))}
           Keyword.put(servers, server_id, server_info)
       end
     end)
@@ -66,7 +66,7 @@ defmodule FakeServer.Agents.ServerAgent do
       case servers[server_id] do
         nil -> nil
         server_route_list ->
-          Map.keys(server_route_list.route_responses) ++ Map.keys(server_route_list.controllers)
+          Map.keys(server_route_list.paths) ++ Map.keys(server_route_list.controllers)
       end
     end)
   end
@@ -77,8 +77,8 @@ defmodule FakeServer.Agents.ServerAgent do
       nil -> nil
       [] -> server_default_response(server_id)
       server_route_list ->
-        [next_response|route_responses] = server_route_list
-        put_responses_to_path(server_id, path, route_responses)
+        [next_response|paths] = server_route_list
+        put_responses_to_path(server_id, path, paths)
         next_response
     end
   end
@@ -117,7 +117,7 @@ defmodule FakeServer.Agents.ServerAgent do
     servers = Agent.get(__MODULE__, &(&1))
     case servers[server_id] do
       nil -> nil
-      server_info -> server_info.route_responses[path]
+      server_info -> server_info.paths[path]
     end
   end
 end
