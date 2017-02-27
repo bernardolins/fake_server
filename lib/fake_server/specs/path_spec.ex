@@ -1,7 +1,7 @@
-defmodule FakeServer.API.PathSpec do
+defmodule FakeServer.Specs.PathSpec do
   defstruct [controller: nil, response_list: [], hits: 0]
 
-  alias FakeServer.API.PathSpec
+  alias FakeServer.Specs.PathSpec
 
   def new do
     %PathSpec{}

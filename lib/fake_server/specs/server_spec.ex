@@ -1,20 +1,26 @@
-defmodule FakeServer.API.ServerSpec do
-  defstruct [id: nil, paths: %{}, controllers: %{}, default_response: FakeServer.HTTP.Response.default]
+defmodule FakeServer.Specs.ServerSpec do
+  defstruct [id: nil, paths: %{}, controllers: %{}, default_response: FakeServer.HTTP.Response.default, port: nil]
   @enforce_keys[:name]
 
   @id_length 16
+  @base_ip {127, 0, 0, 1}
+  @base_port_number 5000
 
-  alias FakeServer.API.ServerSpec
-  alias FakeServer.API.PathSpec
+  alias FakeServer.Specs.ServerSpec
+  alias FakeServer.Specs.PathSpec
 
-  require IEx
-
-  def new do
-    %ServerSpec{id: random_server_id()}
+  def new(id \\ nil, port \\ nil) do
+    server_id = id || random_server_id()
+    port = port || choose_port()
+    %ServerSpec{id: server_id, port: port}
   end
 
   def id(%ServerSpec{} = spec) do
     spec.id
+  end
+
+  def path_list_for(%ServerSpec{} = spec) do
+    Map.keys(spec.paths)
   end
 
   def response_list_for(%ServerSpec{} = spec, path) do
@@ -60,4 +66,16 @@ defmodule FakeServer.API.ServerSpec do
     |> binary_part(0, @id_length)
     |> String.to_atom
   end
+
+  defp choose_port do
+    port = random_port_number()
+    case :ranch_tcp.listen(ip: @base_ip, port: port) do
+      {:ok, socket} ->
+        :erlang.port_close(socket)
+        port
+      {:error, :eaddrinuse} -> choose_port()
+    end
+  end
+
+  defp random_port_number, do: @base_port_number + :rand.uniform(5000)
 end
