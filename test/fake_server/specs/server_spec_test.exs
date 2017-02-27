@@ -21,6 +21,15 @@ defmodule FakeServer.Specs.ServerSpecTest do
     test "returns a ServerSpec structure with a given port" do
       assert ServerSpec.new(:some_id, 8080) == %ServerSpec{id: :some_id, port: 8080}
     end
+
+    test "use next available port if the chosen one is taken" do
+      with_mock :rand, [:unstick], [uniform: fn(_) -> 1 end] do
+        {:ok, socket} = :ranch_tcp.listen(ip: {127,0,0,1}, port: 5001)
+        spec = ServerSpec.new
+        assert spec.port == 5002
+        :erlang.port_close(socket)
+      end
+    end
   end
 
   describe "#id" do

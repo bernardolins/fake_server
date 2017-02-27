@@ -67,13 +67,14 @@ defmodule FakeServer.Specs.ServerSpec do
     |> String.to_atom
   end
 
-  defp choose_port do
-    port = random_port_number()
+  defp choose_port(port \\ nil) do
+    port = port || random_port_number()
     case :ranch_tcp.listen(ip: @base_ip, port: port) do
       {:ok, socket} ->
         :erlang.port_close(socket)
         port
-      {:error, :eaddrinuse} -> choose_port()
+      {:error, :eaddrinuse} ->
+        choose_port(port+1)
     end
   end
 
