@@ -7,7 +7,7 @@ defmodule FakeServer.Specs.ServerSpecTest do
 
   describe "#new" do
     test "returns a ServerSpec structure with a given server_id and random port" do
-      spec = ServerSpec.new(:some_id)
+      spec = ServerSpec.new(%{id: :some_id})
       assert spec == %ServerSpec{id: :some_id, port: spec.port}
     end
 
@@ -19,7 +19,13 @@ defmodule FakeServer.Specs.ServerSpecTest do
     end
 
     test "returns a ServerSpec structure with a given port" do
-      assert ServerSpec.new(:some_id, 8080) == %ServerSpec{id: :some_id, port: 8080}
+      spec = ServerSpec.new(%{port: 8080})
+      assert spec == %ServerSpec{id: spec.id, port: 8080}
+    end
+
+    test "returns a ServerSpec structure with a given default_response" do
+      spec = ServerSpec.new(%{default_response: FakeServer.HTTP.Response.bad_request})
+      assert spec == %ServerSpec{id: spec.id, port: spec.port, default_response: FakeServer.HTTP.Response.bad_request}
     end
 
     @tag :skip
@@ -40,7 +46,7 @@ defmodule FakeServer.Specs.ServerSpecTest do
     end
 
     test "returns server spec when id is provided" do
-      server = ServerSpec.new(:some_id)
+      server = ServerSpec.new(%{id: :some_id})
       assert ServerSpec.id(server) == :some_id
     end
   end

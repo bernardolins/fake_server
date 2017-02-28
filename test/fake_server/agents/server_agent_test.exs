@@ -32,17 +32,17 @@ defmodule FakeServer.Agents.ServerAgentTest do
   describe "#save_spec" do
     test "saves a new spec" do
       ServerAgent.start_link
-      ServerSpec.new(:some_server, 8080) |> ServerAgent.save_spec
+      ServerSpec.new(%{id: :some_server, port: 8080}) |> ServerAgent.save_spec
       assert Agent.get(ServerAgent, &(&1)) == [some_server: %ServerSpec{id: :some_server, port: 8080}]
       ServerAgent.stop
     end
 
     test "overwrites existing server spec" do
       ServerAgent.start_link
-      ServerSpec.new(:some_server, 9999) |> ServerAgent.save_spec
+      ServerSpec.new(%{id: :some_server, port: 9999}) |> ServerAgent.save_spec
       assert Agent.get(ServerAgent, &(&1)) == [some_server: %ServerSpec{id: :some_server, port: 9999}]
 
-      ServerSpec.new(:some_server, 8888) |> ServerAgent.save_spec
+      ServerSpec.new(%{id: :some_server, port: 8888}) |> ServerAgent.save_spec
       assert Agent.get(ServerAgent, &(&1)) == [some_server: %ServerSpec{id: :some_server, port: 8888}]
       ServerAgent.stop
     end
@@ -51,7 +51,7 @@ defmodule FakeServer.Agents.ServerAgentTest do
   describe "#get_spec" do
     test "returns server spec when one is saved to agent" do
       ServerAgent.start_link
-      ServerSpec.new(:some_server, 9999) |> ServerAgent.save_spec
+      ServerSpec.new(%{id: :some_server, port: 9999}) |> ServerAgent.save_spec
       assert ServerAgent.get_spec(:some_server) == %ServerSpec{id: :some_server, port: 9999}
       ServerAgent.stop
     end

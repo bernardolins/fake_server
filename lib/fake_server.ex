@@ -1,30 +1,25 @@
 defmodule FakeServer do
 
-  alias FakeServer.HTTP.Response
   alias FakeServer.HTTP.Server
-  alias FakeServer.Agents.ServerAgent
 
-  @base_address "http://127.0.0.1"
+  @fake_server_ip "127.0.0.1"
 
-  
   @moduledoc """
-  # FakeServer
-
   This module provides some simple macros to help you to mock HTTP requests on your tests.
 
-  ## Getting Started
- 
-  A basic setup is shown bellow:
-  
+  ### Basic Usage
   ```elixir
+  # test/test_helper.exs
+  Application.ensure_all_started(:fake_server)
+  ExUnit.start()
+
+  # test/my_app/dummy_test.exs
   defmodule DummyTest do
     use ExUnit.Case, async: true
     import FakeServer
     alias FakeServer.HTTP.Response
 
-    Application.ensure_all_started(:fake_server)
-
-    test_with_server "test if fake server really works" do
+    test_with_server "test if fake_server really works" do
       route fake_server, "/test", do: [Response.ok, Response.not_found, Response.bad_request]
 
       response = HTTPoison.get! fake_server_address <> "/test"
@@ -34,71 +29,144 @@ defmodule FakeServer do
       assert response.status_code == 404
 
       response = HTTPoison.get! fake_server_address <> "/test"
-      assert response.status_code == 400 
+      assert response.status_code == 400
     end
   end
   ```
   """
 
   @doc """
-  This macro starts a server on a random or customized port and calls ExUnit's `test` internally. 
+  This macro starts a server on a random or customized port and calls `ExUnit.Case.test/3` internally.
 
-  *Note: Despite the server is running, no route is configured, so any request to this server will return 404.*
+  Note that calling this macro will give you a running server without any routes configured. Therefore, all requests to this server will return 404. To configure a route to the server, use `route/3` macro.
 
-  You must provide a `test_description` (a message describing the teste) and a `test_block` (the test itself).
+  ### Arguments
+  `test_description`: A string describing the test. This will become `message` argument of `ExUnit.Case.test/3`.
 
-  Some `opts` are accepted:
-  `port` is used to customize which port the server will run.
-  `default_response` to customize the default response. The server will reply this when no response is provided.
+  `opts`: A map containing options to configure the server berfore it starts. This map accepts:
+    1. `:id` customizes the server id, used as unique indentifier. If you don't provide this option, FakeServer will create one for you.
+    2. `:port` customizes which port the server will run. Again, if you don't provide one, FakeServer will generate a random port between 5000-10000
+    3. `:default_response` customizes the server reply when response list is empty.
 
-  Also, two variables are available inside `test_block`:
-  `fake_server` is an id to the server. It should be only used internally.
-  `fake_server_address` is an url to hit the server. You can use it to configure you application to call the fake server instead of the real one.
+  `test_block`: The test itself. This will run inside `ExUnit.Case.test/3`.
 
-  To configure a `route` to the server, use `route/3` macro.
+  Some variables are available to use inside `test_block`:
 
-  ### Example
-  `
-  test_with_server "with no route will respond always 404" do
+    1. `fake_server` identifies the server. Should only be used internally.
+    3. `fake_server_ip` returns the ip to reach fake_server. Defaults to "127.0.0.1"
+    3. `fake_server_port` returns the port fake_server is listening.
+    2. `fake_server_address` is server `ip:port`. You can replace your application config to use this address instead the real one.
+
+  ### Examples
+  ```
+  test_with_server "with no route configured will always reply 404" do
+    response = HTTPoison.get! fake_server_address <> "/"
+    assert response.status_code == 404
     response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 404
+    response = HTTPoison.get! fake_server_address <> "/test/1"
     assert response.status_code == 404
   end
 
-  test_with_server "test with default port", [port: 5001] do
-    assert fake_server_address == "http://127.0.0.1:5001"
+  test_with_server "with port configured, server will listen on the port provided", [port: 5001] do
+    assert fake_server_port == 5001
+    assert fake_server_address == "127.0.0.1:5001"
+    response = HTTPoison.get! "127.0.0.1:5001" <> "/"
     assert response.status_code == 404
+  end
+
+  test_with_server "default response can be configured and will be replied response list is empty", [port: 5001, default_response: FakeServer.HTTP.Response.bad_request] do
+    route fake_server, "/", do: []
+    response = HTTPoison.get! fake_server_address <> "/"
+    assert response.status_code == 400
   end
   ```
   """
   defmacro test_with_server(test_description, opts \\ [], do: test_block) do
     quote do
       test unquote(test_description) do
-        {:ok, server_name, port} = Server.run
+        map_opts = Enum.into(unquote(opts), %{})
+        {:ok, server_id, port} = Server.run(map_opts)
 
-        ServerAgent.put_default_response(server_name, unquote(opts[:default_response]))
-
-        var!(fake_server_address) = "#{unquote(@base_address)}:#{port}"
-        var!(fake_server) = server_name
-        var!(fake_server_map) = ServerAgent.take_server_info(server_name)
+        var!(fake_server) = server_id
+        var!(fake_server_ip) = unquote(@fake_server_ip)
+        var!(fake_server_port) = port
+        var!(fake_server_address) = "#{unquote(@fake_server_ip)}:#{port}"
 
         unquote(test_block)
 
-        Server.stop(server_name)
+        Server.stop(server_id)
       end
     end
   end
 
   @doc """
+  This macro configures a route into a running server. You should only use it inside `test_with_server/3`.
+
+  ### Arguments
+
+  `fake_server_id`: This identifies the server this route will be added. You can use `fake_server` variable, available inside `test_with_server/3` macro.
+
+  `path`: This is the URL path. Must be in "/something" format.
+
+  `response_block`: This block can be a `FakeServer.HTTP.Response`, a list of responses or even a `FakeController`.
+
+  ### Examples
+  ```
+  # test/support/fake_controllers.exs
+  defmodule MyApp.FakeControllers
+    use FakeController
+
+    def example_controller(conn) do
+      if :cowboy_req.qs_val("token", conn) |> elem(0) == "1234" do
+        FakeServer.HTTP.Response.ok
+      else
+        FakeServer.HTTP.Response.unauthorized
+      end
+    end
+  end
+
+  # test/my_app/dummy_test.exs
+  import MyApp.FakeControllers
+
+  test_with_server "reply 403 on / and 404 on other paths" do
+    route fake_server, "/", do: FakeServer.HTTP.Response.forbidden
+    response = HTTPoison.get! fake_server_address <> "/"
+    assert response.status_code == 403
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 404
+  end
+
+  test_with_server "reply the first element of the list on / and 404 on other paths" do
+    route fake_server, "/", do: [FakeServer.HTTP.Response.forbidden, FakeServer.HTTP.Response.bad_request]
+    response = HTTPoison.get! fake_server_address <> "/"
+    assert response.status_code == 403
+
+    response = HTTPoison.get! fake_server_address <> "/"
+    assert response.status_code == 400
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 404
+  end
+
+  test_with_server "evaluates FakeController and reply accordingly" do
+    route fake_server, "/", do: use_controller :some_api
+    response = HTTPoison.get! fake_server_address <> "/"
+    assert response.status_code == 401
+
+    response = HTTPoison.get! fake_server_address <> "/?token=1234"
+    assert response.status_code == 200
+  end
+  ```
   """
-  defmacro route(fake_server_name, route, do: response_block) do
+  defmacro route(fake_server_id, path, do: response_block) do
     quote do
       case unquote(response_block) do
-        {:controller, module, function_name} ->
-          FakeServer.Agents.ServerAgent.put_controller_to_path(unquote(fake_server_name), unquote(route), module, function_name)
-          Server.update_router(unquote(fake_server_name))
+        {:controller, module, function} ->
+          Server.add_controller(unquote(fake_server_id), unquote(path), [module: module, function: function])
         list ->
-          ServerAgent.put_responses_to_path(unquote(fake_server_name), unquote(route), list)
-          Server.update_router(unquote(fake_server_name))
+          Server.add_route(unquote(fake_server_id), unquote(path), list)
       end
     end
   end

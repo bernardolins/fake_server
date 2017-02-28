@@ -5,14 +5,15 @@ defmodule FakeServer.Specs.ServerSpec do
   @id_length 16
   @base_ip {127, 0, 0, 1}
   @base_port_number 5000
+  @accepted_options [:id, :default_response, :port]
 
   alias FakeServer.Specs.ServerSpec
   alias FakeServer.Specs.PathSpec
 
-  def new(id \\ nil, port \\ nil) do
-    server_id = id || random_server_id()
-    port = port || choose_port()
-    %ServerSpec{id: server_id, port: port}
+  def new(opts \\ %{}) do
+    default_options = %{id: random_server_id(), port: choose_port()}
+    opts = Map.merge(default_options, opts)
+    struct(ServerSpec, opts)
   end
 
   def id(%ServerSpec{} = spec) do

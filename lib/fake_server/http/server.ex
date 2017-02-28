@@ -4,8 +4,8 @@ defmodule FakeServer.HTTP.Server do
   alias FakeServer.Agents.ServerAgent
   alias FakeServer.HTTP.Response
 
-  def run(config \\ []) do
-    server_spec = ServerSpec.new(config[:id], config[:port])
+  def run(opts \\ %{}) do
+    server_spec = ServerSpec.new(opts)
     router = set_router(server_spec, [id: server_spec.id])
 
     :cowboy.start_http(server_spec.id, 100, [port: server_spec.port], [env: [dispatch: router]])
@@ -42,7 +42,7 @@ defmodule FakeServer.HTTP.Server do
 
   defp set_router(server_spec, opts \\ []) do
     routes = ServerSpec.path_list_for(server_spec)
-    |> Enum.map(&({&1, FakeServer.HTTP.Handler, [id: server_spec.id]}))
+    |> Enum.map(&({&1, FakeServer.HTTP.Handler, opts ++ [id: server_spec.id]}))
     :cowboy_router.compile([{:_, routes}])
   end
 end
