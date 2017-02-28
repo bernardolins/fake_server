@@ -1,4 +1,6 @@
 defmodule FakeServer.Specs.ServerSpec do
+  @moduledoc false
+
   defstruct [id: nil, paths: %{}, controllers: %{}, default_response: FakeServer.HTTP.Response.default, port: nil]
   @enforce_keys[:name]
 

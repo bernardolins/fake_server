@@ -1,4 +1,6 @@
 defmodule FakeServer.Agents.ServerAgent do
+  @moduledoc false
+
   alias FakeServer.Specs.ServerSpec
 
   def start_link do

@@ -1,4 +1,6 @@
 defmodule FakeServer.Specs.PathSpec do
+  @moduledoc false
+
   defstruct [controller: nil, response_list: [], hits: 0]
 
   alias FakeServer.Specs.PathSpec
