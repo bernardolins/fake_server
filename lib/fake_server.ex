@@ -30,6 +30,10 @@ defmodule FakeServer do
 
       response = HTTPoison.get! fake_server_address <> "/test"
       assert response.status_code == 400
+
+      response = HTTPoison.get! fake_server_address <> "/test"
+      assert response.status_code == 200
+      assert respone.body == "This is a default response from FakeServer"
     end
   end
   ```
@@ -38,24 +42,24 @@ defmodule FakeServer do
   @doc """
   This macro starts a server on a random or customized port and calls `ExUnit.Case.test/3` internally.
 
-  Note that calling this macro will give you a running server without any routes configured. Therefore, all requests to this server will return 404. To configure a route to the server, use `route/3` macro.
+  Note that calling this macro will give you a running server without any routes configured. Therefore, all requests to this server will return 404. To set up a route to the server, use `route/3` macro.
 
   ### Arguments
-  `test_description`: A string describing the test. This will become `message` argument of `ExUnit.Case.test/3`.
+  `test_description`: A string describing the test. This argument will become `message` argument of `ExUnit.Case.test/3`.
 
-  `opts`: A map containing options to configure the server berfore it starts. This map accepts:
-    1. `:id` customizes the server id, used as unique indentifier. If you don't provide this option, FakeServer will create one for you.
-    2. `:port` customizes which port the server will run. Again, if you don't provide one, FakeServer will generate a random port between 5000-10000
+  `opts`: A map containing options to configure the server before it starts. This map accepts:
+    1. `:id` customizes the server id, used as the unique identifier. If you don't provide this option, FakeServer will create one for you.
+    2. `:port` set up which port the server will run. Again, if you don't provide one, FakeServer will generate a random port between 5000-10000
     3. `:default_response` customizes the server reply when response list is empty.
 
-  `test_block`: The test itself. This will run inside `ExUnit.Case.test/3`.
+  `test_block`: The test itself. Run inside `ExUnit.Case.test/3`.
 
   Some variables are available to use inside `test_block`:
 
     1. `fake_server` identifies the server. Should only be used internally.
-    3. `fake_server_ip` returns the ip to reach fake_server. Defaults to "127.0.0.1"
+    3. `fake_server_ip` returns the IP to reach fake_server. Defaults to "127.0.0.1"
     3. `fake_server_port` returns the port fake_server is listening.
-    2. `fake_server_address` is server `ip:port`. You can replace your application config to use this address instead the real one.
+    2. `fake_server_address` is server `IP:port`. You can replace your application config to use this address instead of the real one.
 
   ### Examples
   ```
@@ -105,11 +109,11 @@ defmodule FakeServer do
 
   ### Arguments
 
-  `fake_server_id`: This identifies the server this route will be added. You can use `fake_server` variable, available inside `test_with_server/3` macro.
+  `fake_server_id`: FakeServer uses this id to find out where to add the route. You can use `fake_server` variable, available inside `test_with_server/3` macro.
 
-  `path`: This is the URL path. Must be in "/something" format.
+  `path`: This is the URL path. Must be in "/some/path" format.
 
-  `response_block`: This block can be a `FakeServer.HTTP.Response`, a list of responses or even a `FakeController`.
+  `response_block`: This block must return a `FakeServer.HTTP.Response`, a list of responses or a `FakeController`.
 
   ### Examples
   ```
@@ -117,7 +121,7 @@ defmodule FakeServer do
   defmodule MyApp.FakeControllers
     use FakeController
 
-    def example_controller(conn) do
+    def query_string_example_controller(conn) do
       if :cowboy_req.qs_val("token", conn) |> elem(0) == "1234" do
         FakeServer.HTTP.Response.ok
       else
@@ -127,36 +131,45 @@ defmodule FakeServer do
   end
 
   # test/my_app/dummy_test.exs
-  import MyApp.FakeControllers
+  defmodule MyApp.DummyTest do
+    use ExUnit.Case, async: true
+    import FakeServer
+    import MyApp.FakeControllers
 
-  test_with_server "reply 403 on / and 404 on other paths" do
-    route fake_server, "/", do: FakeServer.HTTP.Response.forbidden
-    response = HTTPoison.get! fake_server_address <> "/"
-    assert response.status_code == 403
+    Application.ensure_all_started(:fake_server)
 
-    response = HTTPoison.get! fake_server_address <> "/test"
-    assert response.status_code == 404
-  end
+    test_with_server "reply 403 on / and 404 on other paths" do
+      route fake_server, "/", do: FakeServer.HTTP.Response.forbidden
+      response = HTTPoison.get! fake_server_address <> "/"
+      assert response.status_code == 403
 
-  test_with_server "reply the first element of the list on / and 404 on other paths" do
-    route fake_server, "/", do: [FakeServer.HTTP.Response.forbidden, FakeServer.HTTP.Response.bad_request]
-    response = HTTPoison.get! fake_server_address <> "/"
-    assert response.status_code == 403
+      response = HTTPoison.get! fake_server_address <> "/test"
+      assert response.status_code == 404
+    end
 
-    response = HTTPoison.get! fake_server_address <> "/"
-    assert response.status_code == 400
+    test_with_server "reply the first element of the list on / and 404 on other paths" do
+      route fake_server, "/", do: [FakeServer.HTTP.Response.forbidden, FakeServer.HTTP.Response.bad_request]
+      response = HTTPoison.get! fake_server_address <> "/"
+      assert response.status_code == 403
 
-    response = HTTPoison.get! fake_server_address <> "/test"
-    assert response.status_code == 404
-  end
+      response = HTTPoison.get! fake_server_address <> "/"
+      assert response.status_code == 400
 
-  test_with_server "evaluates FakeController and reply accordingly" do
-    route fake_server, "/", do: use_controller :some_api
-    response = HTTPoison.get! fake_server_address <> "/"
-    assert response.status_code == 401
+      response = HTTPoison.get! fake_server_address <> "/test"
+      assert response.status_code == 404
+    end
 
-    response = HTTPoison.get! fake_server_address <> "/?token=1234"
-    assert response.status_code == 200
+    test_with_server "evaluates FakeController and reply accordingly" do
+      route fake_server, "/", do: use_controller :query_string_example
+      response = HTTPoison.get! fake_server_address <> "/"
+      assert response.status_code == 401
+
+      response = HTTPoison.get! fake_server_address <> "/?token=4321"
+      assert response.status_code == 401
+
+      response = HTTPoison.get! fake_server_address <> "/?token=1234"
+      assert response.status_code == 200
+    end
   end
   ```
   """
