@@ -60,7 +60,7 @@ defmodule FakeController do
 
       def use_controller(controller_name) do
         function_name = "#{to_string(controller_name)}_controller" |> String.to_atom
-        {:controller, __MODULE__, function_name}
+        [module: __MODULE__, function: function_name]
       end
     end
   end

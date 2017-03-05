@@ -33,7 +33,7 @@ defmodule FakeServer do
 
       response = HTTPoison.get! fake_server_address <> "/test"
       assert response.status_code == 200
-      assert respone.body == "This is a default response from FakeServer"
+      assert response.body == "This is a default response from FakeServer"
     end
   end
   ```
@@ -93,8 +93,6 @@ defmodule FakeServer do
         {:ok, server_id, port} = Server.run(map_opts)
 
         var!(fake_server) = server_id
-        var!(fake_server_ip) = unquote(@fake_server_ip)
-        var!(fake_server_port) = port
         var!(fake_server_address) = "#{unquote(@fake_server_ip)}:#{port}"
 
         unquote(test_block)
@@ -176,10 +174,12 @@ defmodule FakeServer do
   defmacro route(fake_server_id, path, do: response_block) do
     quote do
       case unquote(response_block) do
-        {:controller, module, function} ->
+        [module: module, function: function] ->
           Server.add_controller(unquote(fake_server_id), unquote(path), [module: module, function: function])
-        list ->
+        list when is_list(list) ->
           Server.add_route(unquote(fake_server_id), unquote(path), list)
+        %FakeServer.HTTP.Response{} = response ->
+          Server.add_route(unquote(fake_server_id), unquote(path), response)
       end
     end
   end
