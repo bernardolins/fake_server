@@ -3,129 +3,134 @@
 [![Coverage Status](https://coveralls.io/repos/github/bernardolins/fake_server/badge.svg?branch=master)](https://coveralls.io/github/bernardolins/fake_server?branch=master)
 [![Inline docs](http://inch-ci.org/github/bernardolins/fake_server.svg?branch=master&style=shields)](http://inch-ci.org/github/bernardolins/fake_server)
 
-FakeServer is a simple Elixir library that helps you to mock web requests.
+FakeServer provides some helpers to easily mock HTTP servers on your tests. You can configure a server, some routes and choose what each route will reply based on your needs.
+
+FakeServer integrates with [ExUnit](https://hexdocs.pm/ex_unit/ExUnit.html) but can be used as a standalone server either.
 
 ## Installation
 
-FakeServer is available on [Hex](https://hex.pm/packages/fake_server). To use it on your application, just add it to `mix.exs` as a test dependency.
+FakeServer is available on [Hex](https://hex.pm/packages/fake_server). All you have to do is to add it to `mix.exs` as a test dependency.
 
 ```elixir
 def deps do
-  [{:fake_server, "~> 0.5.0", only: :test}]
+  [{:fake_server, "~> 1.0.0", only: :test}]
 end
 ```
-## How it works
 
-First, you create some `FakeServer.Status`. Those status are the way the server will respond when a request arrives. In a status you specify the response code and body. You can add some headers to the response as well.
-
-```elixir
-iex(1)> FakeServer.Status.create(:status200, %{response_code: 200, response_body: "Hello World"})
-:ok
-iex(2)> FakeServer.Status.create(:status400, %{response_code: 400, response_body: "bad_request"})
-:ok
-iex(3)> FakeServer.Status.create(:status500, %{response_code: 500, response_body: "internal_server_error"})
-:ok
-```
-*Multiple servers can use the same status, so you just need to define it once.*
-
-Then, you create a server that uses some of the statuses available:
-```elixir
-iex(4)> FakeServer.run(:server_name, [:status200, :status500, :status400])
-{:ok, "127.0.0.1:8259"}
-```
-Now you have an HTTP server running; You can access the server using the address returned by `FakeServer.run/2` function. This new server will respond with the status specified in the list you provided. The first request will get the first status as a response, and so on. When the server responds with a status, it is removed from the list and the server will respond with the next status.
-
-```bash
-$ curl 127.0.0.1:8259
-Hello World
-$ curl 127.0.0.1:8259
-internal_server_error
-$ curl 127.0.0.1:8259
-bad_request
-```
-
-If the list empties, the request will get a default response:
-```bash
-$ curl 127.0.0.1:8259
-"status": "no more actions"
-```
-
-## Using it on your tests
-
-The primary use of FakeServer is on tests. It can simplify some complex to test scenarios, like timeouts, external servers instability, cache usage, and many others. Just be creative :)
-
-Here are some usage examples:
-
-**Important:** From version *0.2.1* to *0.3.0*, `FakeServer.Server` was replaced by `FakeServer`
+Start fake_server application on `test/test_helper.exs`
 
 ```elixir
-### test/test_helper.exs
-ExUnit.start()
-
-# create some status that your external server could respond with
-# you just need to do it once for you entire test suite.
-FakeServer.Status.create(:status200, %{response_code: 200, response_body: ~s<"username": "mr_user">})
-FakeServer.Status.create(:status500, %{response_code: 500, response_body: ~s<"error": "internal server error">})
-FakeServer.Status.create(:status403, %{response_code: 403, response_body: ~s<"error": "forbidden">})
-
-# you can also pass `response_headers` (optional):
-FakeServer.Status.create(:status404, %{response_code: 404, response_body: ~s<"error": "not found">, response_headers: %{"Content-Length": 5}})
-
-
-### test/user_test.exs
-defmodule UserTest do
-  use ExUnit.Case
-
-  setup_all do
-    # you can run a single server on a test file
-    # start a fake server with an empty status_list
-    # you can ignore the third param if you want the server to run on a random port
-    # when using a global server, make sure :async option is set to false on ExUnit
-    {:ok, address} = FakeServer.run(:external_server, [], %{port: 5000})
-
-    # point your application to the new fake server
-    System.put_env(:external_server_url, address)
-
-    # you can use ExUnit callback to stop the server
-    on_exit fn ->
-      FakeServer.stop(:external_server)
-    end
-  end
-
-  test "#get returns user if the external server responds 200" do
-    # If you created a global server, you just need to modify the server behavior on each test case
-    # just add the status sequence you want the server to return
-    FakeServer.modify_behavior(:external_server, :status200)
-
-    # make the request to the fake server and validate it works
-    assert User.get == %{username: "mr_user"}
-  end
-
-  test "#get retry up to 3 times when external server responds with 500" do
-    FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status200])
-
-    # in our application, one User.get call makes multiple requests to the server when it returns 500
-    assert User.get == %{username: "mr_user"}
-  end
-
-  test "#get returns timeout after 3 retries" do
-    # another retry example, this time with a timeout scenario
-    FakeServer.modify_behavior(:external_server, [:status500, :status500, :status500, :status500])
-    assert User.get == %{error: "timeout", code: 408}
-  end
-
-  test "#get serves stale content when external server is down if there is some cache available" do
-    FakeServer.modify_behavior(:external_server, [:status200, :status500])
-
-    # our application saves cache on the first successfull response
-    # so we make a get request with a 200 response from fake server to save some cache
-    User.get
-
-    # the second response from fake server is 500, but since there's some cache, the response is correct
-    # that's how we know the cache is working
-    assert User.get == %{username: "mr_user"}
-  end
-end
+{:ok, _} = Application.ensure_all_started(:fake_server)
 ```
+
 ## Documentation
 Detailed documentation is available on [Hexdocs](https://hexdocs.pm/fake_server/api-reference.html)
+
+## Using with ExUnit
+
+Please, refer to [docs](https://hexdocs.pm/fake_server/api-reference.html) for more details. Also, there are some usage examples at `test/integration` directory.
+
+Even if the examples here are using `GET` requests, you should be able to use any HTTP method.
+
+### With a single response
+
+```elixir
+# test/support/fake_controllers.ex
+test_with_server "accepts a single element" do
+  route fake_server, "/test", do: Response.bad_request
+
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 400
+
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 200
+  assert response.body == "This is a default response from FakeServer"
+end
+
+test_with_server "default response can be configured and will be replied when there are no more responses", [default_response: Response.forbidden] do
+  route fake_server, "/test", do: Response.bad_request
+
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 400
+
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 403
+end
+```
+
+### With a list of responses
+
+```elixir
+# test/support/fake_controllers.ex
+test_with_server "reply the first element of the list and remove it" do
+  route fake_server, "/test", do: [Response.ok, Response.not_found, Response.bad_request]
+
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 200
+
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 404
+
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 400
+
+  # reply the default_response when the list empties
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 200
+  assert response.body == "This is a default response from FakeServer"
+end
+
+test_with_server "default response will be replied if server is configured with an empty list", [default_response: Response.forbidden] do
+  route fake_server, "/test", do: []
+
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 403
+
+  response = HTTPoison.get! fake_server_address <> "/test"
+  assert response.status_code == 403
+end
+```
+
+### FakeControllers
+
+```elixir
+# test/support/fake_controllers.ex
+defmodule FakeServer.Integration.FakeControllers do
+  use FakeController
+
+  def query_string_controller(conn) do
+    if :cowboy_req.qs_val("token", conn) |> elem(0) == "1234" do
+      FakeServer.HTTP.Response.ok
+    else
+      FakeServer.HTTP.Response.unauthorized
+    end
+  end
+end
+
+# test/my_app/some_test.exs
+test_with_server "evaluates FakeController and reply accordingly" do
+  route fake_server, "/", do: use_controller :query_string
+  response = HTTPoison.get! fake_server_address <> "/"
+  assert response.status_code == 401
+
+  response = HTTPoison.get! fake_server_address <> "/?token=1234"
+  assert response.status_code == 200
+end
+```
+
+### Server configuration
+
+```elixir
+# test/my_app/some_test.exs
+test_with_server "with port configured, server will listen on the port provided", [port: 5001] do
+  assert fake_server_address == "127.0.0.1:5001"
+  response = HTTPoison.get! "127.0.0.1:5001" <> "/"
+  assert response.status_code == 404
+end
+
+test_with_server "default response can be configured and will be replied if response list is empty", [port: 5001, default_response: Response.bad_request] do
+  route fake_server, "/", do: []
+  response = HTTPoison.get! fake_server_address <> "/"
+  assert response.status_code == 400
+end
+```
