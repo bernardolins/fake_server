@@ -26,6 +26,26 @@ defmodule FakeServer.FakeServerIntegrationTest do
     assert response.status_code == 400
   end
 
+  test_with_server "default response can be configured and will be replied with a single response", [default_response: Response.forbidden] do
+    route fake_server, "/test", do: Response.bad_request
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 400
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 403
+  end
+
+  test_with_server "default response will be replied if server is configured with an empty list", [default_response: Response.forbidden] do
+    route fake_server, "/test", do: []
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 403
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 403
+  end
+
   test_with_server "with any routes configured will always reply 404" do
     response = HTTPoison.get! fake_server_address <> "/"
     assert response.status_code == 404
