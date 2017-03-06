@@ -9,16 +9,17 @@ FakeServer integrates with [ExUnit](https://hexdocs.pm/ex_unit/ExUnit.html) but 
 
 ## Installation
 
-FakeServer is available on [Hex](https://hex.pm/packages/fake_server). All you have to do is to add it to `mix.exs` as a test dependency.
+FakeServer is available on [Hex](https://hex.pm/packages/fake_server). All you have to do is to add it to `mix.exs` as a test dependency. 
+
+This version is not released to hex yet. You can use it by adding a `github` option to your `mix.exs`.
 
 ```elixir
 def deps do
-  [{:fake_server, "~> 1.0.0", only: :test}]
+  [{:fake_server, github: "bernardolins/fake_server", ref: "master", only: :test}]
 end
 ```
 
-Start fake_server application on `test/test_helper.exs`
-
+Start `fake_server` application on `test/test_helper.exs`
 ```elixir
 {:ok, _} = Application.ensure_all_started(:fake_server)
 ```
