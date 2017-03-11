@@ -17,7 +17,7 @@ defmodule FakeServer.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :cowboy, :httpoison], mod: {FakeServer.Application, []}]
+    [applications: [:logger, :cowboy], mod: {FakeServer.Application, []}]
   end
 
   # Dependencies can be Hex packages:

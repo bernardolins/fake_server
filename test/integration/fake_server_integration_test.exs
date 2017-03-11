@@ -9,6 +9,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
   setup_all do
     # This should be be done at test/test_helper.exs
     Application.ensure_all_started(:fake_server)
+    Application.ensure_all_started(:httpoison)
     on_exit fn ->
       Application.stop(:fake_server)
     end
