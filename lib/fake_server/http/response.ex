@@ -1,6 +1,6 @@
 defmodule FakeServer.HTTP.Response do
+  @enforce_keys [:code]
   defstruct [code: nil, body: "", headers: []]
-  @enforce_keys[:code]
 
   def ok(body \\ "", headers \\ []) do
     %FakeServer.HTTP.Response{code: 200, body: body, headers: headers}
