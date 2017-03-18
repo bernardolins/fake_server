@@ -15,130 +15,126 @@ FakeServer is available on [Hex](https://hex.pm/packages/fake_server). All you h
 
 ```elixir
 def deps do
-  [{:fake_server, github: "bernardolins/fake_server", ref: "master", only: :test}]
+  [{:fake_server, "~> 0.5.0"}]
 end
 ```
 
 Start `fake_server` application on `test/test_helper.exs`
+
 ```elixir
 {:ok, _} = Application.ensure_all_started(:fake_server)
 ```
 
-## Responses
-For FakeServer, a response is a struct `% FakeServer.HTTP.Response {}`.
+## ExUnit integration
 
-This struct accepts three fields:
+To use FakeServer together with ExUnit, simply write your tests using the `test_with_server` macro.
 
-1. The `body` string
-2. The positive integer `code` (required)
-3. The `headers` array
+### Running a test with a server
+`test_with_server`, starts an HTTP server, initially without any route configured (that is, any request will be replied with 404).
 
 ```elixir
-Iex (1)>% FakeServer.HTTP.Response {code: 403}
-%FakeServer.HTTP.Response {body: "", code: 403, headers: []}
-Iex (2)>% FakeServer.HTTP.Response {body: ~ s <{"message": "Hello world!"}}}
-** (ArgumentError) the following keys must also be given when building struct FakeServer.HTTP.Response: [: code]
-     (Fake_server) expanding struct: FakeServer.HTTP.Response .__ struct __ / 1
-                   Iex: 2: (file)>}
-iex(3)> FakeServer.HTTP.Response.default
-%FakeServer.HTTP.Response{body: "This is a default response from FakeServer",
- code: 200, headers: []}
-```
-
-## Using with ExUnit
-FakeServer integrates with ExUnit through the `test_with_server` macro.
-
-Within the execution block of the macro is available an HTTP server, which can be accessed at the address (in the 127.0.0.1:port format) saved in the `fake_server_address` variable.
-
-Also, this server is uniquely identified through a hash, which is available in the `fake_server` variable. FakeServer needs this hash to know on which server the operations should be performed. This allows the tests to run asynchronously without problems.
-
-The server is created without any route, that is, any access will be replied with 404. To add a route, just use the `route` macro.
-
-Let's see some examples:
-
-### With a single response
-
-The most basic way of using it is to add a path that replies to a single response. In the default configuration of a route in FakeServer, this reply will be given only for the first request. The following requests will be answered with a configurable `default_response`.
-
-If you always want to respond with the same answer, consider using a `FakeController`.
-
-```elixir
-# test/my_app/some_module_test.exs
-
-test_with_server "accepts a single element" do
-  route fake_server, "/test", do: Response.bad_request
-
-  response = HTTPoison.get! fake_server_address <> "/test"
-  assert response.status_code == 400
-
-  response = HTTPoison.get! fake_server_address <> "/test"
-  assert response.status_code == 200
-  assert response.body == "This is a default response from FakeServer"
-end
-
-test_with_server "default response can be configured and will be replied when there are no more responses", [default_response: Response.forbidden] do
-  route fake_server, "/test", do: Response.bad_request
-
-  response = HTTPoison.get! fake_server_address <> "/test"
-  assert response.status_code == 400
-
-  response = HTTPoison.get! fake_server_address <> "/test"
-  assert response.status_code == 403
-end
-```
-
-### With a list of responses
-
-You can also configure a route to respond with elements in a list. Each request will be replied with the first item in the list, which is then removed. This continues until the list empties. When the list is empty, any request will be replied with `default_response`.
-
-```elixir
-# test/my_app/some_module_test.exs
-
-test_with_server "reply the first element of the list and remove it" do
-  route fake_server, "/test", do: [Response.ok, Response.not_found, Response.bad_request]
-
-  response = HTTPoison.get! fake_server_address <> "/test"
-  assert response.status_code == 200
-
-  response = HTTPoison.get! fake_server_address <> "/test"
+test_with_server "server will always reply 404 without any route configured", do
+  response = HTTPoison.get! fake_server_address <> "/"
   assert response.status_code == 404
 
-  response = HTTPoison.get! fake_server_address <> "/test"
-  assert response.status_code == 400
+  response = HTTPoison.get! fake_server_address <> "/any/route"
+  assert response.status_code == 404
 
-  # reply the default_response when the list empties
-  response = HTTPoison.get! fake_server_address <> "/test"
-  assert response.status_code == 200
-  assert response.body == "This is a default response from FakeServer"
-end
-
-test_with_server "default response will be replied if server is configured with an empty list", [default_response: Response.forbidden] do
-  route fake_server, "/test", do: []
-
-  response = HTTPoison.get! fake_server_address <> "/test"
-  assert response.status_code == 403
-
-  response = HTTPoison.get! fake_server_address <> "/test"
-  assert response.status_code == 403
+  response = HTTPoison.get! fake_server_address <> "/another/route"
+  assert response.status_code == 404
 end
 ```
 
-### FakeControllers
+### Adding routes
+
+You can add routes to your server through the `route` macro.
+
+A route can reply a request in 3 ways:
+  1. directly returning the response;
+  2. iterating a list;
+  3. querying a FakeController.
+
+#### With a single response
+
+```elixir
+# test/my_app/some_module_test.exs
+
+describe "with a single response element" do
+  test_with_server "reply with this element once and then uses a default response" do
+    route fake_server, "/test", do: Response.bad_request
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 400
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 200
+    assert response.body == "This is a default response from FakeServer"
+  end
+
+  test_with_server "this default response can be configured", [default_response: Response.forbidden] do
+    route fake_server, "/test", do: Response.bad_request
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 400
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 403
+  end
+end
+```
+
+#### With a list of responses
+
+```elixir
+# test/my_app/some_module_test.exs
+
+describe "with a list of responses" do
+  test_with_server "responds with the first element until the list empties, and then uses a default response" do
+    route fake_server, "/test", do: [Response.ok, Response.not_found, Response.bad_request]
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 200
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 404
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 400
+
+    # reply the default_response when the list empties
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 200
+    assert response.body == "This is a default response from FakeServer"
+  end
+
+  test_with_server "this default response can be configured", [default_response: Response.forbidden] do
+    route fake_server, "/test", do: []
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 403
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 403
+  end
+end
+```
+
+#### With FakeControllers
 With FakeControllers you can analyze the content of the request and choose the type of response dynamically.
 
-FakeControllers are functions with the name ending in `_controller`, arity 1, and that return a struct`% FakeServer.HTTP.Response {} `, defined inside some module that uses` FakeController`.
-
-These functions are executed every time a request arrives at a route configured with a controller.
-
-Its argument is a `conn` tuple, which contains various request information, such as query strings and headers.
-
-To use a controller, simply call the `use_controller` macro in the route configuration, passing the controller name without` _controller` as an argument.
+A controller is a special function that is executed every time a route configured with it receives a request.
 
 ```elixir
 # test/support/fake_controllers.ex
+
+# Create a module with your controllers and use the
+# FakeController.__using__ macro on this module
 defmodule FakeServer.Integration.FakeControllers do
   use FakeController
 
+  # Controller names must end in _controller
+  # Also, they receive a single argument
+  # They must return an %FakeServer.HTTP.Response struct
   def query_string_controller(conn) do
     if :cowboy_req.qs_val("token", conn) |> elem(0) == "1234" do
       FakeServer.HTTP.Response.ok
@@ -149,8 +145,13 @@ defmodule FakeServer.Integration.FakeControllers do
 end
 
 # test/my_app/some_test.exs
+
 test_with_server "evaluates FakeController and reply accordingly" do
+  # Every time a request arrives at root path, the controller
+  # will be executed to determine which response should be given
+  # Note that _controller is not needed on the controller name this time!
   route fake_server, "/", do: use_controller :query_string
+
   response = HTTPoison.get! fake_server_address <> "/"
   assert response.status_code == 401
 
@@ -161,15 +162,20 @@ end
 
 ### Server configuration
 
+The `test_with_server` macro accepts a keyword list with arguments to the server that will be created.
+
 ```elixir
 # test/my_app/some_test.exs
-test_with_server "with port configured, server will listen on the port provided", [port: 5001] do
+test_with_server "accepts the port argument to configure a custom port for the server", [port: 5001] do
   assert fake_server_address == "127.0.0.1:5001"
+
+  route fake_server, "/", do: Response.bad_request
+
   response = HTTPoison.get! "127.0.0.1:5001" <> "/"
-  assert response.status_code == 404
+  assert response.status_code == 400
 end
 
-test_with_server "default response can be configured and will be replied if response list is empty", [port: 5001, default_response: Response.bad_request] do
+test_with_server "accepts the default_response argument to configure the server default response", [default_response: Response.bad_request] do
   route fake_server, "/", do: []
   response = HTTPoison.get! fake_server_address <> "/"
   assert response.status_code == 400
