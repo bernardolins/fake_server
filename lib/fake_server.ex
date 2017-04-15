@@ -5,65 +5,21 @@ defmodule FakeServer do
   @fake_server_ip "127.0.0.1"
 
   @moduledoc """
-  This module provides some simple macros to help you to mock HTTP requests on your tests.
-
-  ### Basic Usage
-  ```elixir
-  # test/test_helper.exs
-  Application.ensure_all_started(:fake_server)
-  ExUnit.start()
-
-  # test/my_app/dummy_test.exs
-  defmodule DummyTest do
-    use ExUnit.Case, async: true
-    import FakeServer
-    alias FakeServer.HTTP.Response
-
-    test_with_server "test if fake_server really works" do
-      route fake_server, "/test", do: [Response.ok, Response.not_found, Response.bad_request]
-
-      response = HTTPoison.get! fake_server_address <> "/test"
-      assert response.status_code == 200
-
-      response = HTTPoison.get! fake_server_address <> "/test"
-      assert response.status_code == 404
-
-      response = HTTPoison.get! fake_server_address <> "/test"
-      assert response.status_code == 400
-
-      response = HTTPoison.get! fake_server_address <> "/test"
-      assert response.status_code == 200
-      assert response.body == "This is a default response from FakeServer"
-    end
-  end
-  ```
+  Provides macros that help create HTTP servers in tests
   """
 
   @doc """
-  This macro starts a server on a random or customized port and calls `ExUnit.Case.test/3` internally.
+  This macro works similarly to `ExUnit.Case.test/3`, with the difference that it starts an HTTP server.
 
-  Note that calling this macro will give you a running server without any routes configured. Therefore, all requests to this server will return 404. To set up a route to the server, use `route/3` macro.
+  The address of this server is set in the `fake_server_address` variable. To allow multiple servers to run concurrently, each one of them receives a hash of identification. This hash is available in the `fake_server` variable and should only be used internally by FakeServer.
 
-  ### Arguments
-  `test_description`: A string describing the test. This argument will become `message` argument of `ExUnit.Case.test/3`.
+  If you need an HTTP server on your test, just use `test_with_server` instead of `ExUnit.Case.test/3`. Their arguments are similar: A description (the `test_description` argument) and the implementation of the test case itself (the `list` argument).
 
-  `opts`: A map containing options to configure the server before it starts. This map accepts:
-    1. `:id` customizes the server id, used as the unique identifier. If you don't provide this option, FakeServer will create one for you.
-    2. `:port` set up which port the server will run. Again, if you don't provide one, FakeServer will generate a random port between 5000-10000
-    3. `:default_response` customizes the server reply when response list is empty.
+  You can also set some configuration parameters for the server before it starts through the keyword list `opts`.
 
-  `test_block`: The test itself. Run inside `ExUnit.Case.test/3`.
-
-  Some variables are available to use inside `test_block`:
-
-    1. `fake_server` identifies the server. Should only be used internally.
-    3. `fake_server_ip` returns the IP to reach fake_server. Defaults to "127.0.0.1"
-    3. `fake_server_port` returns the port fake_server is listening.
-    2. `fake_server_address` is server `IP:port`. You can replace your application config to use this address instead of the real one.
-
-  ### Examples
-  ```
-  test_with_server "with no route configured will always reply 404" do
+  ## Usage:
+  ```elixir
+  test_with_server "without configured routes will always return 404" do
     response = HTTPoison.get! fake_server_address <> "/"
     assert response.status_code == 404
     response = HTTPoison.get! fake_server_address <> "/test"
@@ -72,17 +28,26 @@ defmodule FakeServer do
     assert response.status_code == 404
   end
 
-  test_with_server "with port configured, server will listen on the port provided", [port: 5001] do
-    assert fake_server_port == 5001
+  test_with_server "server port configuration", [port: 5001] do
     assert fake_server_address == "127.0.0.1:5001"
     response = HTTPoison.get! "127.0.0.1:5001" <> "/"
     assert response.status_code == 404
   end
 
-  test_with_server "default response can be configured and will be replied response list is empty", [port: 5001, default_response: FakeServer.HTTP.Response.bad_request] do
-    route fake_server, "/", do: []
+  test_with_server "adding a route", do
+    route fake_server, "/", do: FakeServer.HTTP.Response.bad_request
     response = HTTPoison.get! fake_server_address <> "/"
     assert response.status_code == 400
+  end
+
+  test_with_server "setting a default response", [default_response: Response.forbidden] do
+    route fake_server, "/test", do: Response.bad_request
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 400
+
+    response = HTTPoison.get! fake_server_address <> "/test"
+    assert response.status_code == 403
   end
   ```
   """
@@ -103,73 +68,15 @@ defmodule FakeServer do
   end
 
   @doc """
-  This macro configures a route into a running server. You should only use it inside `test_with_server/3`.
+  Adds a route to a server and the responses that will be given when a request reaches that route.
 
-  ### Arguments
+  Responses can be given in three formats:
 
-  `fake_server_id`: FakeServer uses this id to find out where to add the route. You can use `fake_server` variable, available inside `test_with_server/3` macro.
+  1. A single answer. In this case, this response will be given by the server on the first request. The following requests will be replied with the default_response.
 
-  `path`: This is the URL path. Must be in "/some/path" format.
+  2. A list of answers. In this case, each request will be replied with the first element of the list, which is then removed. When the list is empty, the requests will receive default_respose in response.
 
-  `response_block`: This block must return a `FakeServer.HTTP.Response`, a list of responses or a `FakeController`.
-
-  ### Examples
-  ```
-  # test/support/fake_controllers.exs
-  defmodule MyApp.FakeControllers
-    use FakeController
-
-    def query_string_example_controller(conn) do
-      if :cowboy_req.qs_val("token", conn) |> elem(0) == "1234" do
-        FakeServer.HTTP.Response.ok
-      else
-        FakeServer.HTTP.Response.unauthorized
-      end
-    end
-  end
-
-  # test/my_app/dummy_test.exs
-  defmodule MyApp.DummyTest do
-    use ExUnit.Case, async: true
-    import FakeServer
-    import MyApp.FakeControllers
-
-    Application.ensure_all_started(:fake_server)
-
-    test_with_server "reply 403 on / and 404 on other paths" do
-      route fake_server, "/", do: FakeServer.HTTP.Response.forbidden
-      response = HTTPoison.get! fake_server_address <> "/"
-      assert response.status_code == 403
-
-      response = HTTPoison.get! fake_server_address <> "/test"
-      assert response.status_code == 404
-    end
-
-    test_with_server "reply the first element of the list on / and 404 on other paths" do
-      route fake_server, "/", do: [FakeServer.HTTP.Response.forbidden, FakeServer.HTTP.Response.bad_request]
-      response = HTTPoison.get! fake_server_address <> "/"
-      assert response.status_code == 403
-
-      response = HTTPoison.get! fake_server_address <> "/"
-      assert response.status_code == 400
-
-      response = HTTPoison.get! fake_server_address <> "/test"
-      assert response.status_code == 404
-    end
-
-    test_with_server "evaluates FakeController and reply accordingly" do
-      route fake_server, "/", do: use_controller :query_string_example
-      response = HTTPoison.get! fake_server_address <> "/"
-      assert response.status_code == 401
-
-      response = HTTPoison.get! fake_server_address <> "/?token=4321"
-      assert response.status_code == 401
-
-      response = HTTPoison.get! fake_server_address <> "/?token=1234"
-      assert response.status_code == 200
-    end
-  end
-  ```
+  3. A FakeController. In this case, the responses will be given dynamically, according to request parameters. For more details see FakeController.
   """
   defmacro route(fake_server_id, path, do: response_block) do
     quote do

@@ -1,12 +1,18 @@
 defmodule FakeController do
   @moduledoc """
   FakeControllers provide a way to respond dynamically, based on each request arrived.
-  All you have to do is to create a function with arity 1 and name ending in `_controller`. Just make sure this function returns a `FakeServer.HTTP.Response`.
 
-  This function receives a `conn` object as an argument. This object contains information about the request, like the headers, query string parameters and many other.
-  You can use this information to choose what to reply.
+  A FakeController is a function where the name ends in `_controller`, which receives a `conn` object and returns `%FakeServer.HTTP.Response{}`.
+
+  The `conn` object has various information about the request, such as headers and query string parameters, and can be used to evaluate which response should be given.
 
   Once you create a controller, you may create a route on a server that uses it. You can do this by calling `use_controller/1` function on `FakeServer.route/3`.
+
+  ### Where to create my controllers?
+
+  You should create your controllers in a single module that makes use of `FakeControllers.__using__/1`.
+
+  Simply import this module into the test file where the controllers will be used.
 
   ### Examples
   ```
