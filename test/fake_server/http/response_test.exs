@@ -10,6 +10,14 @@ defmodule FakeServer.HTTP.ResponseTest do
     assert Response.created == %Response{code: 201, body: "", headers: []}
   end
 
+  test "#accepted must respond with a 202 status code and empty body and headers" do
+    assert Response.accepted == %Response{code: 202, body: "", headers: []}
+  end
+
+  test "#no_content must respond with a 204 status code and empty body and headers" do
+    assert Response.no_content == %Response{code: 204, body: "", headers: []}
+  end
+
   test "#bad_request must respond with a 400 status code and empty body and headers" do
     assert Response.bad_request == %Response{code: 400, body: "", headers: []}
   end

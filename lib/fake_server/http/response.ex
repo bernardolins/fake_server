@@ -1,4 +1,7 @@
 defmodule FakeServer.HTTP.Response do
+  @moduledoc """
+  """
+
   @enforce_keys [:code]
   defstruct [code: nil, body: "", headers: []]
 
@@ -8,6 +11,14 @@ defmodule FakeServer.HTTP.Response do
 
   def created(body \\ "", headers \\ []) do
     %FakeServer.HTTP.Response{code: 201, body: body, headers: headers}
+  end
+
+  def accepted(body \\ "", headers \\ []) do
+    %FakeServer.HTTP.Response{code: 202, body: body, headers: headers}
+  end
+
+  def no_content(body \\ "", headers \\ []) do
+    %FakeServer.HTTP.Response{code: 204, body: body, headers: headers}
   end
 
   def bad_request(body \\ "", headers \\ []) do
