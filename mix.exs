@@ -3,7 +3,7 @@ defmodule FakeServer.Mixfile do
 
   def project do
     [app: :fake_server,
-     version: "0.5.0",
+     version: "1.0.0",
      elixir: "~> 1.3",
      description: description(),
      package: package(),
@@ -41,7 +41,7 @@ defmodule FakeServer.Mixfile do
 
 	defp description do
     """
-    Mock HTTP requests.
+    FakeServer makes it easy to create mocks for HTTP servers in your tests. It integrates very well with ExUnit, but can also be used as a standalone server.
     """
   end
 
