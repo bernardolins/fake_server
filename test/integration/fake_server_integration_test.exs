@@ -16,6 +16,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
   end
 
   test_with_server "with port configured, server will listen on the port provided", [port: 5001] do
+    assert fake_server != nil
     assert fake_server_address == "127.0.0.1:5001"
     response = HTTPoison.get! "127.0.0.1:5001" <> "/"
     assert response.status_code == 404
@@ -48,6 +49,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
   end
 
   test_with_server "with any routes configured will always reply 404" do
+    assert fake_server != nil
     response = HTTPoison.get! fake_server_address <> "/"
     assert response.status_code == 404
     response = HTTPoison.get! fake_server_address <> "/test"

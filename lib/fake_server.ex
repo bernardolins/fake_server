@@ -78,13 +78,16 @@ defmodule FakeServer do
 
   3. A FakeController. In this case, the responses will be given dynamically, according to request parameters. For more details see FakeController.
   """
+  defmacro route(fake_server_id, path, do: response_block) when is_list(response_block) do
+    quote do
+      Server.add_route(unquote(fake_server_id), unquote(path), unquote(response_block))
+    end
+  end
   defmacro route(fake_server_id, path, do: response_block) do
     quote do
       case unquote(response_block) do
         [module: module, function: function] ->
           Server.add_controller(unquote(fake_server_id), unquote(path), [module: module, function: function])
-        list when is_list(list) ->
-          Server.add_route(unquote(fake_server_id), unquote(path), list)
         %FakeServer.HTTP.Response{} = response ->
           Server.add_route(unquote(fake_server_id), unquote(path), response)
       end
