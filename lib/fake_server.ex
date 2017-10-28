@@ -1,6 +1,7 @@
 defmodule FakeServer do
 
   alias FakeServer.HTTP.Server
+  alias FakeServer.Agents.EnvAgent
 
   @moduledoc """
   Provides macros that help create HTTP servers in tests
@@ -74,7 +75,9 @@ defmodule FakeServer do
         map_opts = Enum.into(unquote(opts), %{})
         {:ok, server_id, port} = Server.run(map_opts)
         env = FakeServer.Env.new(port)
-        var!(env, FakeServer) = env
+
+        EnvAgent.save_env(server_id, env)
+
         var!(current_id, FakeServer) = server_id
         unquote(test_block)
 
@@ -127,9 +130,9 @@ defmodule FakeServer do
   """
   defmacro env do
     quote do
-      case var!(env, FakeServer) do
+      case var!(current_id, FakeServer) do
         nil -> raise "You can only call FakeServer.env inside test_with_server"
-        env -> env
+        current_id -> EnvAgent.get_env(current_id)
       end
     end
   end
@@ -148,9 +151,11 @@ defmodule FakeServer do
   """
   defmacro address do
     quote do
-      case var!(env, FakeServer) do
+      case var!(current_id, FakeServer) do
         nil -> raise "You can only call FakeServer.address inside test_with_server"
-        env -> "#{env.ip}:#{env.port}"
+        current_id ->
+          env = EnvAgent.get_env(current_id)
+          "#{env.ip}:#{env.port}"
       end
     end
   end
