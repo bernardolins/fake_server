@@ -1,6 +1,5 @@
 defmodule FakeServer.HTTP.Response do
-  @moduledoc """
-  """
+  @moduledoc false
 
   @enforce_keys [:code]
   defstruct [code: nil, body: "", headers: []]

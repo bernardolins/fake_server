@@ -1,4 +1,5 @@
 defmodule FakeServer.HTTP.Server do
+  @moduledoc false
 
   alias FakeServer.Specs.ServerSpec
   alias FakeServer.Agents.ServerAgent
