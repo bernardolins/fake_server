@@ -64,7 +64,8 @@ defmodule FakeServer.Specs.ServerSpec do
 
   # thanks http://stackoverflow.com/a/32002566 :)
   defp random_server_id do
-    :crypto.strong_rand_bytes(@id_length)
+    random = :crypto.strong_rand_bytes(@id_length)
+    random
     |> Base.url_encode64
     |> binary_part(0, @id_length)
     |> String.to_atom
@@ -77,7 +78,7 @@ defmodule FakeServer.Specs.ServerSpec do
         :erlang.port_close(socket)
         port
       {:error, :eaddrinuse} ->
-        choose_port(port+1)
+        choose_port(port + 1)
     end
   end
 

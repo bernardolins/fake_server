@@ -12,7 +12,7 @@ defmodule FakeServer.HTTP.Handler do
       nil -> :cowboy_req.reply(500, [], "Server spec not found", conn)
       spec ->
         update_hits(spec.id)
-        path = :cowboy_req.path(conn) |> elem(0)
+        path = elem(:cowboy_req.path(conn), 0)
         spec
         |> check_controller(path, conn)
         |> reply(path, conn)
@@ -50,7 +50,7 @@ defmodule FakeServer.HTTP.Handler do
   defp update_hits(server_id) do
     case EnvAgent.get_env(server_id) do
       nil -> nil
-      env ->  EnvAgent.save_env(server_id, %FakeServer.Env{env | hits: env.hits+1})
+      env ->  EnvAgent.save_env(server_id, %FakeServer.Env{env | hits: env.hits + 1})
     end
   end
 end
