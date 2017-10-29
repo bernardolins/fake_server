@@ -34,13 +34,13 @@ To use FakeServer together with ExUnit, simply write your tests using the `test_
 
 ```elixir
 test_with_server "server will always reply 404 without any route configured", do
-  response = HTTPoison.get! fake_server_address <> "/"
+  response = HTTPoison.get! FakeServer.address <> "/"
   assert response.status_code == 404
 
-  response = HTTPoison.get! fake_server_address <> "/any/route"
+  response = HTTPoison.get! FakeServer.address <> "/any/route"
   assert response.status_code == 404
 
-  response = HTTPoison.get! fake_server_address <> "/another/route"
+  response = HTTPoison.get! FakeServer.address <> "/another/route"
   assert response.status_code == 404
 end
 ```
@@ -61,23 +61,23 @@ A route can reply a request in 3 ways:
 
 describe "with a single response element" do
   test_with_server "reply with this element once and then uses a default response" do
-    route fake_server, "/test", do: Response.bad_request
+    route "/test", do: Response.bad_request
 
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 400
 
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 200
     assert response.body == "This is a default response from FakeServer"
   end
 
   test_with_server "this default response can be configured", [default_response: Response.forbidden] do
-    route fake_server, "/test", do: Response.bad_request
+    route "/test", do: Response.bad_request
 
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 400
 
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 403
   end
 end
@@ -90,30 +90,30 @@ end
 
 describe "with a list of responses" do
   test_with_server "responds with the first element until the list empties, and then uses a default response" do
-    route fake_server, "/test", do: [Response.ok, Response.not_found, Response.bad_request]
+    route "/test", do: [Response.ok, Response.not_found, Response.bad_request]
 
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 200
 
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 404
 
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 400
 
     # reply the default_response when the list empties
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 200
     assert response.body == "This is a default response from FakeServer"
   end
 
   test_with_server "this default response can be configured", [default_response: Response.forbidden] do
-    route fake_server, "/test", do: []
+    route "/test", do: []
 
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 403
 
-    response = HTTPoison.get! fake_server_address <> "/test"
+    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 403
   end
 end
@@ -150,12 +150,12 @@ test_with_server "evaluates FakeController and reply accordingly" do
   # Every time a request arrives at root path, the controller
   # will be executed to determine which response should be given
   # Note that _controller is not needed on the controller name this time!
-  route fake_server, "/", do: use_controller :query_string
+  route "/", do: use_controller :query_string
 
-  response = HTTPoison.get! fake_server_address <> "/"
+  response = HTTPoison.get! FakeServer.address <> "/"
   assert response.status_code == 401
 
-  response = HTTPoison.get! fake_server_address <> "/?token=1234"
+  response = HTTPoison.get! FakeServer.address <> "/?token=1234"
   assert response.status_code == 200
 end
 ```
@@ -167,17 +167,17 @@ The `test_with_server` macro accepts a keyword list with arguments to the server
 ```elixir
 # test/my_app/some_test.exs
 test_with_server "accepts the port argument to configure a custom port for the server", [port: 5001] do
-  assert fake_server_address == "127.0.0.1:5001"
+  assert FakeServer.address == "127.0.0.1:5001"
 
-  route fake_server, "/", do: Response.bad_request
+  route "/", do: Response.bad_request
 
   response = HTTPoison.get! "127.0.0.1:5001" <> "/"
   assert response.status_code == 400
 end
 
 test_with_server "accepts the default_response argument to configure the server default response", [default_response: Response.bad_request] do
-  route fake_server, "/", do: []
-  response = HTTPoison.get! fake_server_address <> "/"
+  route "/", do: []
+  response = HTTPoison.get! FakeServer.address <> "/"
   assert response.status_code == 400
 end
 ```
