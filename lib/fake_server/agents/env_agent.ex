@@ -19,4 +19,8 @@ defmodule FakeServer.Agents.EnvAgent do
   def get_env(server_id) do
     Agent.get(__MODULE__, &Keyword.get(&1, server_id))
   end
+
+  def delete_env(server_id) do
+    Agent.get(__MODULE__, &Keyword.delete(&1, server_id))
+  end
 end
