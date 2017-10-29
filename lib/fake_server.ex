@@ -4,56 +4,52 @@ defmodule FakeServer do
   alias FakeServer.Agents.EnvAgent
 
   @moduledoc """
-  Provides macros that help create HTTP servers in tests
+  Manage HTTP servers on your tests
   """
 
   @doc """
   Runs a test with an HTTP server.
 
-  This macro works similarly to `ExUnit.Case.test/3`, with the difference that it starts an HTTP server. If you need an HTTP server on your test, just use `test_with_server/3` instead of `ExUnit.Case.test/3`. Their arguments are similar: A description (the `test_description` argument) and the implementation of the test case itself (the `list` argument). The server will start just before your test block and will stop just before the test exits. Each `test_with_server/3` has its own server.
+  If you need an HTTP server on your test, just write it using `test_with_server/3` instead of `ExUnit.Case.test/3`. Their arguments are similar: A description (the `test_description` argument), the implementation of the test case itself (the `list` argument) and an optional list of parameters (the `opts` argument).
+
+  The server will start just before your test block and will stop just before the test exits. Each `test_with_server/3` has its own server. By default, all servers will start in a random unused port, which allows you to run your tests with `ExUnit.Case async: true` option enabled.
 
   ## Environment
-  FakeServer defines an environment for each `test_with_server/3`. This environment is stored insied a FakeServer.Env structure, which has the following fields:
+  FakeServer defines an environment for each `test_with_server/3`. This environment is stored inside a `FakeServer.Env` structure, which has the following fields:
 
   - `:ip`: the current server IP
-  - `:port`: the current the server port
+  - `:port`: the current server port
+  - `:routes`: the list of server routes
+  - `:hits`: the number of requests made to the server
 
-  To access this environment, FakeServer provides the `FakeServer.env/0` macro, which returns the environment for the current test. For convenience, you can also use the `FakeServer.address/0` macro that returns the server address in the "IP: port" format. It also can only be called from `test_with_server/0`
+  To access this environment, you can use `FakeServer.env/0`, which returns the environment for the current test. For convenience, you can also use the `FakeServer.address/0` or `FakeServer.hits/0`.
 
   ## Server options
   You can set some options to the server before it starts using the `opts` params. The following options are accepted:
 
-  `:default_response`: The response that will be given by the server if no route has been configured or no answers are available for a particular route.
-  `:port`: The port that the server will respond.
+  `:default_response`: The response that will be given by the server if a route has no responses configured.
+  `:port`: The port that the server will listen.
 
   ## Usage:
   ```elixir
-  defmodule FakeServerTest do
+  defmodule SomeTest do
     use ExUnit.Case, async: true
-
     import FakeServer
-
     alias FakeServer.HTTP.Response
 
-    test_with_server "without configured routes will always return 404" do
+    test_with_server "without configured routes will always return 404 and hits will not be updated" do
       response = HTTPoison.get! FakeServer.address <> "/"
       assert response.status_code == 404
       response = HTTPoison.get! FakeServer.address <> "/test"
       assert response.status_code == 404
       response = HTTPoison.get! FakeServer.address <> "/test/1"
       assert response.status_code == 404
+      assert FakeServer.env.hits == 0
     end
 
     test_with_server "server port configuration", [port: 5001] do
+      assert FakeServer.env.port == 5001
       assert FakeServer.address == "127.0.0.1:5001"
-      response = HTTPoison.get! "127.0.0.1:5001" <> "/"
-      assert response.status_code == 404
-    end
-
-    test_with_server "adding a route", do
-      route "/", do: FakeServer.HTTP.Response.bad_request
-      response = HTTPoison.get! FakeServer.address <> "/"
-      assert response.status_code == 400
     end
 
     test_with_server "setting a default response", [default_response: Response.forbidden] do
@@ -64,6 +60,31 @@ defmodule FakeServer do
 
       response = HTTPoison.get! FakeServer.address <> "/test"
       assert response.status_code == 403
+    end
+
+    test_with_server "adding a route" do
+      route "/", do: FakeServer.HTTP.Response.bad_request
+
+      response = HTTPoison.get! FakeServer.address <> "/"
+      assert response.status_code == 400
+    end
+
+    test_with_server "save server hits in the environment" do
+      route "/", do: Response.ok
+      assert FakeServer.hits == 0
+
+      HTTPoison.get! FakeServer.address <> "/"
+      assert FakeServer.hits == 1
+
+      HTTPoison.get! FakeServer.address <> "/"
+      assert FakeServer.hits == 2
+    end
+
+    test_with_server "adding body and headers to the response" do
+      route "/", do: Response.ok(~s<{"response": "ok"}>, [{'x-my-header', 'fake-server'}])
+
+      response = HTTPoison.get! FakeServer.address <> "/"
+      assert Enum.any?(response.headers, fn(header) -> header == {"x-my-header", "fake-server"} end)
     end
   end
   ```
@@ -82,6 +103,7 @@ defmodule FakeServer do
         unquote(test_block)
 
         Server.stop(server_id)
+        EnvAgent.delete_env(server_id)
       end
     end
   end
@@ -91,21 +113,25 @@ defmodule FakeServer do
 
   Responses can be given in three formats:
 
-  1. A single answer. In this case, this response will be given by the server on the first request. The following requests will be replied with the default_response.
+  1. A single `FakeServer.HTTP.Response`. In this case, this response will be given by the server on the first request. The following requests will be replied with the default_response.
 
-  2. A list of answers. In this case, each request will be replied with the first element of the list, which is then removed. When the list is empty, the requests will receive default_respose in response.
+  2. A list of `FakeServer.HTTP.Response`. In this case, each request will be replied with the first element of the list, which is then removed. When the list is empty, the requests will be replied with `default_respose`.
 
-  3. A FakeController. In this case, the responses will be given dynamically, according to request parameters. For more details see FakeController.
+  3. A `FakeController`. In this case, the responses will be given dynamically, according to request parameters. For more details see `FakeController`.
   """
   defmacro route(path, do: response_block) when is_list(response_block) do
     quote do
       current_id = var!(current_id, FakeServer)
+      env = EnvAgent.get_env(current_id)
+      EnvAgent.save_env(current_id, %FakeServer.Env{env | routes: [unquote(path)|env.routes]})
       Server.add_route(current_id, unquote(path), unquote(response_block))
     end
   end
   defmacro route(path, do: response_block) do
     quote do
       current_id = var!(current_id, FakeServer)
+      env = EnvAgent.get_env(current_id)
+      EnvAgent.save_env(current_id, %FakeServer.Env{env | routes: [unquote(path)|env.routes]})
       case unquote(response_block) do
         [module: module, function: function] ->
           Server.add_controller(current_id, unquote(path), [module: module, function: function])
@@ -118,7 +144,7 @@ defmodule FakeServer do
   @doc """
   Returns the current server environment.
 
-  You can only call FakeServer.env inside `test_with_server/3`.
+  You can only call `FakeServer.env/0` inside `test_with_server/3`.
 
   ## Usage
   ```elixir
@@ -131,7 +157,7 @@ defmodule FakeServer do
   defmacro env do
     quote do
       case var!(current_id, FakeServer) do
-        nil -> raise "You can only call FakeServer.env inside test_with_server"
+        nil -> raise "You can call this macro inside test_with_server only"
         current_id -> EnvAgent.get_env(current_id)
       end
     end
@@ -140,7 +166,7 @@ defmodule FakeServer do
   @doc """
   Returns the current server address.
 
-  You can only call FakeServer.address inside `test_with_server/3`.
+  You can only call `FakeServer.address/0` inside `test_with_server/3`.
 
   ## Usage
   ```elixir
@@ -156,6 +182,33 @@ defmodule FakeServer do
         current_id ->
           env = EnvAgent.get_env(current_id)
           "#{env.ip}:#{env.port}"
+      end
+    end
+  end
+
+  @doc """
+  Returns the number of requests made to the server.
+
+  You can only call `FakeServer.hits/0` inside `test_with_server/3`.
+
+  ## Usage
+  ```elixir
+  test_with_server "counting server hits" do
+    route "/", do: Response.ok
+    assert FakeServer.hits == 0
+    HTTPoison.get! FakeServer.address <> "/"
+    assert FakeServer.hits == 1
+    HTTPoison.get! FakeServer.address <> "/"
+    assert FakeServer.hits == 2
+  end
+  ```
+  """
+  defmacro hits do
+    quote do
+      case var!(current_id, FakeServer) do
+        nil -> raise "You can only call FakeServer.hits inside test_with_server"
+        current_id ->
+          EnvAgent.get_env(current_id).hits
       end
     end
   end

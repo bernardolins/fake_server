@@ -2,6 +2,7 @@ defmodule FakeServer.HTTP.ServerTest do
   use ExUnit.Case
 
   alias FakeServer.Agents.ServerAgent
+  alias FakeServer.Agents.EnvAgent
   alias FakeServer.HTTP.Response
   alias FakeServer.HTTP.Server
 
@@ -19,6 +20,7 @@ defmodule FakeServer.HTTP.ServerTest do
 
   setup_all do
     ServerAgent.start_link
+    EnvAgent.start_link
     Application.ensure_all_started(:cowboy)
     :ok
   end

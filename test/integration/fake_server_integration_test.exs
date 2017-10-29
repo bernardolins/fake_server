@@ -1,5 +1,5 @@
 defmodule FakeServer.FakeServerIntegrationTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   import FakeServer
   import FakeServer.Integration.FakeControllers
@@ -25,10 +25,33 @@ defmodule FakeServer.FakeServerIntegrationTest do
     assert env.port == 5001
   end
 
+  test_with_server "stores the routes in test env" do
+    assert FakeServer.env.routes == []
+    route "/", do: []
+    assert FakeServer.env.routes == ["/"]
+
+    route "/route1", do: Response.bad_request
+    assert FakeServer.env.routes == ["/route1", "/"]
+
+    route "/route2", do: use_controller :query_string
+    assert FakeServer.env.routes == ["/route2", "/route1", "/"]
+  end
+
+  test_with_server "save server hits in the environment" do
+    route "/", do: Response.ok
+    assert FakeServer.hits == 0
+    HTTPoison.get! FakeServer.address <> "/"
+    assert FakeServer.hits == 1
+    HTTPoison.get! FakeServer.address <> "/"
+    assert FakeServer.hits == 2
+  end
+
   test_with_server "default response can be configured and will be replied response list is empty", [port: 5001, default_response: Response.bad_request] do
     route "/", do: []
+    assert FakeServer.hits == 0
     response = HTTPoison.get! FakeServer.address <> "/"
     assert response.status_code == 400
+    assert FakeServer.hits == 1
   end
 
   test_with_server "default response can be configured and will be replied with a single response", [default_response: Response.forbidden] do
@@ -169,5 +192,12 @@ defmodule FakeServer.FakeServerIntegrationTest do
     response = HTTPoison.get! FakeServer.address <> "/response"
     assert response.status_code == 200
     assert response.body == "This is a default response from FakeServer"
+  end
+
+  test_with_server "works with response headers" do
+    route "/", do: Response.ok(~s<{"response": "ok"}>, [{'x-my-header', 'fake-server'}])
+
+    response = HTTPoison.get! FakeServer.address <> "/"
+    assert Enum.any?(response.headers, fn(header) -> header == {"x-my-header", "fake-server"} end)
   end
 end
