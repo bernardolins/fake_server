@@ -30,13 +30,13 @@ defmodule FakeServer.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:excoveralls, "~> 0.5", only: :test},
-     {:mock, "~> 0.2.0", only: :test},
-     {:credo, "~> 0.5.0", only: [:dev, :test]},
+    [{:excoveralls, "~> 0.7", only: :test},
+     {:mock, "~> 0.3", only: :test},
+     {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
      {:ex_doc, ">= 0.0.0", only: :dev},
-     {:httpoison, "~> 0.10.0", only: :test},
-     {:inch_ex, only: :docs},
-     {:cowboy, "~> 1.1.0"}]
+     {:httpoison, "~> 0.13", only: :test},
+     {:inch_ex, "~> 0.5", only: [:dev, :test]},
+     {:cowboy, "~> 1.1"}]
   end
 
 	defp description do
