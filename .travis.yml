@@ -1,15 +1,10 @@
 language: elixir
 elixir:
-  - 1.3.2
-  - 1.3.4
-  - 1.4.0
-  - 1.4.1
   - 1.4.5
   - 1.5.0
   - 1.5.1
   - 1.5.2
 otp_release:
-  - 18.3
   - 19.3
   - 20.0
 script:
@@ -18,9 +13,3 @@ script:
   - mix inch.report
 env:
   - MIX_ENV=test
-matrix:
-  exclude:
-  - elixir: 1.3.2
-    otp_release: 20.0
-  - elixir: 1.3.4
-    otp_release: 20.0
