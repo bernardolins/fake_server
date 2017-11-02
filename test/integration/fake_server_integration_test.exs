@@ -97,7 +97,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 200
-    assert response.body == "This is a default response from FakeServer"
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
   test_with_server "always reply the default_response when the list empties" do
@@ -108,11 +108,11 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 200
-    assert response.body == "This is a default response from FakeServer"
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
 
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 200
-    assert response.body == "This is a default response from FakeServer"
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
   test_with_server "accepts a single element instead of a list" do
@@ -123,7 +123,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 200
-    assert response.body == "This is a default response from FakeServer"
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
   test_with_server "reply the expected response on cofigured route and 404 on not configured routes" do
@@ -185,13 +185,13 @@ defmodule FakeServer.FakeServerIntegrationTest do
     assert response.status_code == 400
     response = HTTPoison.get! FakeServer.address <> "/list"
     assert response.status_code == 200
-    assert response.body == "This is a default response from FakeServer"
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
 
     response = HTTPoison.get! FakeServer.address <> "/response"
     assert response.status_code == 400
     response = HTTPoison.get! FakeServer.address <> "/response"
     assert response.status_code == 200
-    assert response.body == "This is a default response from FakeServer"
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
   test_with_server "works with response headers" do
