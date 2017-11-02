@@ -5,14 +5,12 @@ defmodule FakeServer.HTTP.Handler do
   alias FakeServer.Agents.ServerAgent
   alias FakeServer.Agents.EnvAgent
 
-  def init(_type, conn, opts), do: {:ok, conn, opts}
-
-  def handle(conn, opts) do
+  def init(conn, opts) do
     case ServerAgent.get_spec(opts[:id]) do
-      nil -> :cowboy_req.reply(500, [], "Server spec not found", conn)
+      nil -> :cowboy_req.reply(500, %{}, "Server spec not found", conn)
       spec ->
         update_hits(spec.id)
-        path = elem(:cowboy_req.path(conn), 0)
+        path = :cowboy_req.path(conn)
         spec
         |> check_controller(path, conn)
         |> reply(path, conn)
@@ -44,7 +42,7 @@ defmodule FakeServer.HTTP.Handler do
         response
     end
 
-    :cowboy_req.reply(response.code, response.headers, response.body, conn)
+    :cowboy_req.reply(response.code, response.headers |> Enum.into(%{}), response.body, conn)
   end
 
   defp update_hits(server_id) do

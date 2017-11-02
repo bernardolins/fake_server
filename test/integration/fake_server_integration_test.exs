@@ -195,7 +195,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
   end
 
   test_with_server "works with response headers" do
-    route "/", do: Response.ok(~s<{"response": "ok"}>, [{'x-my-header', 'fake-server'}])
+    route "/", do: Response.ok(~s<{"response": "ok"}>, %{"x-my-header" => "fake-server"})
 
     response = HTTPoison.get! FakeServer.address <> "/"
     assert Enum.any?(response.headers, fn(header) -> header == {"x-my-header", "fake-server"} end)

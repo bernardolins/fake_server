@@ -36,7 +36,7 @@ defmodule FakeServer.Mixfile do
      {:ex_doc, ">= 0.0.0", only: :dev},
      {:httpoison, "~> 0.13", only: :test},
      {:inch_ex, "~> 0.5", only: [:dev, :test]},
-     {:cowboy, "~> 1.1"}]
+     {:cowboy, "~> 2.0"}]
   end
 
 	defp description do

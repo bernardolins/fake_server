@@ -6,7 +6,7 @@ defmodule FakeServer.Integration.FakeControllers do
   end
 
   def query_string_controller(conn) do
-    if :cowboy_req.qs_val("token", conn) |> elem(0) == "1234" do
+    if :cowboy_req.qs(conn) == "token=1234" do
       FakeServer.HTTP.Response.ok
     else
       FakeServer.HTTP.Response.unauthorized

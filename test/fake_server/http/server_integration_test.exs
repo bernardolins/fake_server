@@ -11,10 +11,10 @@ defmodule FakeServer.HTTP.ServerTest do
   end
 
   def with_conn_controller(conn) do
-    case :cowboy_req.qs_val("respond_with", conn) |> elem(0) do
-      "404" -> Response.not_found
-      "401" -> Response.unauthorized
-      "400" -> Response.bad_request
+    case :cowboy_req.qs(conn) do
+      "respond_with=404" -> Response.not_found
+      "respond_with=401" -> Response.unauthorized
+      "respond_with=400" -> Response.bad_request
     end
   end
 

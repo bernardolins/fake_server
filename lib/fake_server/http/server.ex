@@ -9,7 +9,7 @@ defmodule FakeServer.HTTP.Server do
     server_spec = ServerSpec.new(opts)
     router = set_router(server_spec, [id: server_spec.id])
 
-    :cowboy.start_http(server_spec.id, 100, [port: server_spec.port], [env: [dispatch: router]])
+    :cowboy.start_clear(server_spec.id, [port: server_spec.port], %{env: %{dispatch: router}})
     ServerAgent.save_spec(server_spec)
     {:ok, server_spec.id, server_spec.port}
   end
