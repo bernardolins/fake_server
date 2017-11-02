@@ -7,7 +7,6 @@ defmodule FakeServer.Specs.ServerSpec do
   @id_length 16
   @base_ip {127, 0, 0, 1}
   @base_port_number 5000
-  @accepted_options [:id, :default_response, :port]
 
   alias FakeServer.Specs.ServerSpec
   alias FakeServer.Specs.PathSpec
@@ -57,7 +56,7 @@ defmodule FakeServer.Specs.ServerSpec do
     spec.default_response
   end
 
-  def configure_default_response(%ServerSpec{} = spec, new_default_response, options \\ %{}) do
+  def configure_default_response(%ServerSpec{} = spec, new_default_response) do
     spec = configure_response_list_for(spec, :_, [])
     %ServerSpec{spec | default_response: new_default_response}
   end
