@@ -6,7 +6,9 @@ defmodule FakeServer.HTTP.Response do
   @enforce_keys [:code]
   defstruct [code: nil, body: "", headers: []]
 
-  def new(status, body \\ "", headers \\ []), do: %__MODULE__{code: status, body: body, headers: headers}
+  def new(status, body \\ "", headers \\ [])
+  def new(status, body, headers) when is_map(body), do: %__MODULE__{code: status, body: Poison.encode!(body), headers: headers}
+  def new(status, body, headers), do: %__MODULE__{code: status, body: body, headers: headers}
 
   # 2xx
   def ok(body \\ "", headers \\ []), do: new(200, body, headers)
