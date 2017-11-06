@@ -200,4 +200,11 @@ defmodule FakeServer.FakeServerIntegrationTest do
     response = HTTPoison.get! FakeServer.address <> "/"
     assert Enum.any?(response.headers, fn(header) -> header == {"x-my-header", "fake-server"} end)
   end
+
+  test_with_server "works when the response is created with a map as response body" do
+    route "/", do: Response.ok(%{response: "ok"})
+
+    response = HTTPoison.get! FakeServer.address <> "/"
+    assert response.body == ~s<{"response":"ok"}>
+  end
 end
