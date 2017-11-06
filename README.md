@@ -50,9 +50,9 @@ end
 You can add routes to your server through the `route` macro.
 
 A route can reply a request in 3 ways:
-  1. directly returning the response;
-  2. iterating a list;
-  3. querying a FakeController.
+  1. directly returning the a `[%FakeServer.HTTP.Response{}](https://hexdocs.pm/fake_server/FakeServer.HTTP.Response.html)` structure;
+  2. iterating a list of `[%FakeServer.HTTP.Response{}](https://hexdocs.pm/fake_server/FakeServer.HTTP.Response.html)` structures;
+  3. querying a `[FakeController](https://hexdocs.pm/fake_server/FakeController.html)`.
 
 #### With a single response
 
