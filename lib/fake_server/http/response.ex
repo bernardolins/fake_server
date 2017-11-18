@@ -7,19 +7,27 @@ defmodule FakeServer.HTTP.Response do
   The structure has the following fields:
 
     - `:code`: The status code of the response. It must be an integer.
-    - `:body`: The response body. Can be a string or a map.
-    - `:headers`: The response headers. Must be a map with the string keys.
+    - `:body`: Optional. The response body. Can be a string or a map.
+    - `:headers`: Optional. The response headers. Must be a map with the string keys.
+
+  You can use the `new/3` function to create a new struct.
   """
 
   @enforce_keys [:code]
-  defstruct [code: nil, body: "", headers: []]
+  defstruct [code: nil, body: "", headers: %{}]
 
   @doc """
   Creates a new Response structure.
+
+  ## Example
+  ```elixir
+  FakeServer.HTTP.Response.new(200, %{name: "Test User", email: "test_user@test.com"}, %{"Content-Type" => "application/json"})
+  FakeServer.HTTP.Response.new(200, ~s<{"name":"Test User","email":"test_user@test.com"}>, %{"Content-Type" => "application/json"})
+  FakeServer.HTTP.Response.new(201, ~s<{"name":"Test User","email":"test_user@test.com"}>)
+  FakeServer.HTTP.Response.new(404)
+  ```
   """
-  def new(status, body \\ "", headers \\ %{})
-  def new(status, body, headers) when is_map(body), do: %__MODULE__{code: status, body: Poison.encode!(body), headers: headers}
-  def new(status, body, headers), do: %__MODULE__{code: status, body: body, headers: headers}
+  def new(status, body \\ "", headers \\ %{}), do: %__MODULE__{code: status, body: body, headers: headers}
 
   # 2xx
   def ok(body \\ "", headers \\ %{}), do: new(200, body, headers)

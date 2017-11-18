@@ -37,7 +37,7 @@ defmodule FakeServer.HTTP.ServerTest do
   end
 
   describe "When server is running and spec is found" do
-    test "server will always reply 404 when a request is made to an inexsistent path" do
+    test "server will always reply 404 when a request is made to an inexistent path" do
       {:ok, server_name, port} = Server.run
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
       assert response |> elem(0) |> elem(1) == 404
@@ -128,6 +128,113 @@ defmodule FakeServer.HTTP.ServerTest do
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test/1', [{'connection', 'close'}]}, [], [])
       assert response |> elem(0) |> elem(1) == 403
+
+      FakeServer.HTTP.Server.stop(server_name)
+    end
+
+    test "accept a response with a string as body" do
+      {:ok, server_name, port} = Server.run
+
+      Server.add_route(server_name, "/test", Response.ok(~s<{"test":"ok"}>))
+
+
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 200
+      assert response |> elem(2) == '{"test":"ok"}'
+
+      FakeServer.HTTP.Server.stop(server_name)
+    end
+
+    test "accept a response with a map as body" do
+      {:ok, server_name, port} = Server.run
+
+      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}))
+
+
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 200
+      assert response |> elem(2) == '{"test":"ok"}'
+
+      FakeServer.HTTP.Server.stop(server_name)
+    end
+
+    test "accept a response with a header as a map with string as keys" do
+      {:ok, server_name, port} = Server.run
+
+      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, %{"Content-Type" => "application/json"}))
+
+
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 200
+      assert response |> elem(1) |> List.last == {'content-type', 'application/json'}
+      assert response |> elem(2) == '{"test":"ok"}'
+
+      FakeServer.HTTP.Server.stop(server_name)
+    end
+
+    test "accept a response with a header as a map" do
+      {:ok, server_name, port} = Server.run
+
+      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, %{'Content-Type' => 'application/json'}))
+
+
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 200
+      assert response |> elem(1) |> List.last == {'content-type', 'application/json'}
+      assert response |> elem(2) == '{"test":"ok"}'
+
+      FakeServer.HTTP.Server.stop(server_name)
+    end
+
+    test "returns 500 with a message if the headers are invalid" do
+      {:ok, server_name, port} = Server.run
+
+      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, %{content_type: 'application/json'}))
+
+
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 500
+      assert response |> elem(2) == '{"message":"Invalid header :content_type: Must be a binary"}'
+
+      FakeServer.HTTP.Server.stop(server_name)
+    end
+
+    test "returns 500 with a message if the headers are not either a map or a list" do
+      {:ok, server_name, port} = Server.run
+
+      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, 1))
+
+
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 500
+      assert response |> elem(2) == '{"message":"Invalid headers: 1: Must be a keyword list or a map"}'
+
+      FakeServer.HTTP.Server.stop(server_name)
+    end
+
+    test "returns 500 with a message if the body is invalid" do
+      {:ok, server_name, port} = Server.run
+
+      Server.add_route(server_name, "/test", Response.ok([a: 1]))
+
+
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 500
+      assert response |> elem(2) == '{"message":"Could not encode body: [a: 1]"}'
+
+      FakeServer.HTTP.Server.stop(server_name)
+    end
+
+    test "accept a response with a header as a list" do
+      {:ok, server_name, port} = Server.run
+
+      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, [{'Content-Type', 'application/json'}]))
+
+
+      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
+      assert response |> elem(0) |> elem(1) == 200
+      assert response |> elem(1) |> List.last == {'content-type', 'application/json'}
+      assert response |> elem(2) == '{"test":"ok"}'
 
       FakeServer.HTTP.Server.stop(server_name)
     end

@@ -44,7 +44,12 @@ defmodule FakeServer.HTTP.Handler do
         response
     end
 
-    :cowboy_req.reply(response.code, response.headers, response.body, conn)
+    try do
+      headers = validate_headers(response.headers)
+      body = validate_body(response.body)
+      :cowboy_req.reply(response.code, headers, body, conn)
+    rescue e in ArgumentError -> :cowboy_req.reply(500, [], ~s<{"message":#{inspect e.message}}>, conn)
+    end
   end
 
   defp update_hits(server_id) do
@@ -52,5 +57,33 @@ defmodule FakeServer.HTTP.Handler do
       nil -> nil
       env ->  EnvAgent.save_env(server_id, %FakeServer.Env{env | hits: env.hits + 1})
     end
+  end
+
+  defp validate_headers(headers) when is_list(headers) do
+    headers
+    |> check_headers_and_value_types
+  end
+  defp validate_headers(headers) when is_map(headers) do
+    headers
+    |> check_headers_and_value_types
+    |> Enum.into([])
+  end
+  defp validate_headers(headers), do: raise ArgumentError, "Invalid headers: #{inspect headers}: Must be a keyword list or a map"
+
+  defp validate_body(body) when is_bitstring(body), do: body
+  defp validate_body(body) do
+    case Poison.encode(body) do
+      {:ok, encoded_body} -> encoded_body
+      {:error, _} -> raise ArgumentError, "Could not encode body: #{inspect body}"
+    end
+  end
+
+  defp check_headers_and_value_types(headers) do
+    headers
+    |> Enum.each(fn({header, value}) ->
+      if !is_binary(header) and !is_list(header), do: raise ArgumentError, "Invalid header #{inspect header}: Must be a binary"
+      if !is_binary(value) and !is_list(value), do: raise ArgumentError, "Invalid header value #{inspect value}: Must be a binary or a list"
+    end)
+    headers
   end
 end

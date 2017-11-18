@@ -194,15 +194,36 @@ defmodule FakeServer.FakeServerIntegrationTest do
     assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
-  test_with_server "works with response headers" do
-    route "/", do: Response.ok(~s<{"response": "ok"}>, [{'x-my-header', 'fake-server'}])
+  test_with_server "works with response headers as a keyword list" do
+    route "/", do: Response.ok(~s<{"response": "ok"}>, [{'Content-Type', 'application/json'}])
 
     response = HTTPoison.get! FakeServer.address <> "/"
-    assert Enum.any?(response.headers, fn(header) -> header == {"x-my-header", "fake-server"} end)
+    assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/json"} end)
+  end
+
+  test_with_server "works with response headers as map" do
+    route "/", do: Response.ok(~s<{"response": "ok"}>, %{'Content-Type' => 'application/json'})
+
+    response = HTTPoison.get! FakeServer.address <> "/"
+    assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/json"} end)
+  end
+
+  test_with_server "works with response headers as map with string keys" do
+    route "/", do: Response.ok(~s<{"response": "ok"}>, %{"Content-Type" => "application/json"})
+
+    response = HTTPoison.get! FakeServer.address <> "/"
+    assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/json"} end)
   end
 
   test_with_server "works when the response is created with a map as response body" do
     route "/", do: Response.ok(%{response: "ok"})
+
+    response = HTTPoison.get! FakeServer.address <> "/"
+    assert response.body == ~s<{"response":"ok"}>
+  end
+
+  test_with_server "works when the response is created with a string as response body" do
+    route "/", do: Response.ok(~s<{"response":"ok"}>)
 
     response = HTTPoison.get! FakeServer.address <> "/"
     assert response.body == ~s<{"response":"ok"}>
