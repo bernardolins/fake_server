@@ -1,6 +1,10 @@
 defmodule FakeServer.ResponseFactory do
+  @moduledoc false
+
   defmacro __using__(_) do
     quote do
+      import FakeServer.HTTP.Response
+
       def build(name, header_opts) when is_map(header_opts) do
         response = get_response(name)
         headers = override_headers(response.headers, header_opts)

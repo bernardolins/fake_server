@@ -228,4 +228,166 @@ defmodule FakeServer.FakeServerIntegrationTest do
     response = HTTPoison.get! FakeServer.address <> "/"
     assert response.body == ~s<{"response":"ok"}>
   end
+
+  # see test/integration/support/response_factory.ex
+  describe "when using ResponseFactory" do
+    test_with_server "generates a response wiht custom data" do
+      customized_response = %{body: person} = FakeResponseFactory.build(:person)
+
+      route "/person", do: customized_response
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      assert person[:name] == body["name"]
+      assert person[:email] == body["email"]
+      assert person[:company][:name] == body["company"]["name"]
+      assert person[:company][:country] == body["company"]["country"]
+    end
+
+    test_with_server "can build multiple custom response types" do
+      customized_response = %{body: person} = FakeResponseFactory.build(:person)
+
+      route "/person", do: customized_response
+      route "/not_found", do: FakeResponseFactory.build(:customized_404)
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      assert person[:name] == body["name"]
+      assert person[:email] == body["email"]
+      assert person[:company][:name] == body["company"]["name"]
+      assert person[:company][:country] == body["company"]["country"]
+      assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/json"} end)
+
+      response = HTTPoison.get! FakeServer.address <> "/not_found"
+      assert response.status_code == 404
+      assert response.body == ~s<{"message":"This item was not found!"}>
+    end
+
+    test_with_server "can set some attributes for the built response body" do
+      route "/person", do: FakeResponseFactory.build(:person, name: "John", email: "john@myawesomemail.com")
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      assert body["name"] == "John"
+      assert body["email"] == "john@myawesomemail.com"
+    end
+
+    test_with_server "delete attributes if the value is set to nil" do
+      route "/person", do: FakeResponseFactory.build(:person, email: nil)
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      refute Map.has_key?(body, "email")
+    end
+
+    test_with_server "can set and delete attributes at the same built call" do
+      route "/person", do: FakeResponseFactory.build(:person, name: "John", email: nil)
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      assert body["name"] == "John"
+      refute Map.has_key?(body, "email")
+    end
+
+    test_with_server "can set attributes as map" do
+      route "/person", do: FakeResponseFactory.build(:person, company: %{name: "MyCompany Inc.", country: "Brazil"})
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      assert body["company"]["name"] == "MyCompany Inc."
+      assert body["company"]["country"] == "Brazil"
+    end
+
+    test_with_server "can delete map attributes" do
+      route "/person", do: FakeResponseFactory.build(:person, company: nil)
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      refute Map.has_key?(body, "company")
+    end
+
+    test_with_server "do not add an attribute if it does not exist at default response" do
+      route "/person", do: FakeResponseFactory.build(:person, pet: "Rufus")
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      refute Map.has_key?(body, "pet")
+    end
+
+    test_with_server "can set custom response headers" do
+      route "/person", do: FakeResponseFactory.build(:person, %{"Content-Type" => "application/x-www-form-urlencoded"})
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+
+      assert response.status_code == 200
+      assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/x-www-form-urlencoded"} end)
+    end
+
+    test_with_server "can set body and headers at the same time" do
+      custom_response = FakeResponseFactory.build(:person, [name: "John"], %{"Content-Type" => "application/x-www-form-urlencoded"})
+      route "/person", do: custom_response
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      assert body["name"] == "John"
+      assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/x-www-form-urlencoded"} end)
+    end
+
+    test_with_server "add a new header even if it does not exist on custom response" do
+      custom_response = FakeResponseFactory.build(:person, %{"X-MY-HEADER" => "Hi!"})
+      route "/person", do: custom_response
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+
+      assert response.status_code == 200
+      assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/json"} end)
+      assert Enum.any?(response.headers, fn(header) -> header == {"X-MY-HEADER", "Hi!"} end)
+    end
+
+    test_with_server "delete a header if it's value is nil" do
+      custom_response = FakeResponseFactory.build(:person, %{"Content-Type" => nil})
+      route "/person", do: custom_response
+
+      response = HTTPoison.get! FakeServer.address <> "/person"
+
+      assert response.status_code == 200
+      refute Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/x-www-form-urlencoded"} end)
+    end
+
+    test_with_server "create a list of responses" do
+      person_list = FakeResponseFactory.build_list(3, :person)
+
+      route "/person", do: person_list
+
+      Enum.each(person_list, fn(person) ->
+        response = HTTPoison.get! FakeServer.address <> "/person"
+        body = Poison.decode!(response.body)
+
+        assert response.status_code == 200
+        assert person.body[:name] == body["name"]
+        assert person.body[:email] == body["email"]
+        assert person.body[:company][:name] == body["company"]["name"]
+        assert person.body[:company][:country] == body["company"]["country"]
+      end)
+    end
+  end
 end
+
