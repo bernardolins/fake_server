@@ -50,9 +50,9 @@ end
 You can add routes to your server through the `route` macro.
 
 A route can reply a request in 3 ways:
-  1. directly returning the a `[%FakeServer.HTTP.Response{}](https://hexdocs.pm/fake_server/FakeServer.HTTP.Response.html)` structure;
-  2. iterating a list of `[%FakeServer.HTTP.Response{}](https://hexdocs.pm/fake_server/FakeServer.HTTP.Response.html)` structures;
-  3. querying a `[FakeController](https://hexdocs.pm/fake_server/FakeController.html)`.
+  1. directly returning the a [%FakeServer.HTTP.Response{}](https://hexdocs.pm/fake_server/FakeServer.HTTP.Response.html) structure;
+  2. iterating a list of [%FakeServer.HTTP.Response{}](https://hexdocs.pm/fake_server/FakeServer.HTTP.Response.html) structures;
+  3. querying a [FakeController](https://hexdocs.pm/fake_server/FakeController.html).
 
 #### With a single response
 
@@ -160,6 +160,88 @@ test_with_server "evaluates FakeController and reply accordingly" do
 end
 ```
 
+### Response Factories
+With response factories it is possible to create a default format of a given response and identify it with a name so that it can be shared across several test cases.
+
+They are inspired by the [ExMachina's factories](https://github.com/thoughtbot/ex_machina), and were created to suit the use case where it is necessary to modify both the body or headers of a given response while testing different scenarios.
+
+```elixir
+# test/support/fake_response_factory.ex
+defmodule FakeResponseFactory do
+  use FakeServer.ResponseFactory
+
+  def person_response do
+    ok(%{
+      name: Faker.Name.name,
+      email: Faker.Internet.free_email,
+      company: %{name: Faker.Company.name, county: Faker.Address.country}
+    }, %{"Content-Type" => "application/json"})
+  end
+
+  def customized_404_response do
+    not_found(%{message: "This item was not found!"}, %{"Content-Type" => "application/json"})
+  end
+end
+
+# test/my_app/some_test.exs
+defmodule FakeServer.FakeServerIntegrationTest do
+  use ExUnit.Case, async: false
+
+  import FakeServer
+
+  test_with_server "generates a response wiht custom data" do
+    customized_response = %{body: person} = FakeResponseFactory.build(:person)
+
+    route "/person", do: customized_response
+
+    response = HTTPoison.get! FakeServer.address <> "/person"
+    body = Poison.decode!(response.body)
+
+    assert response.status_code == 200
+    assert person[:name] == body["name"]
+    assert person[:email] == body["email"]
+    assert person[:company][:name] == body["company"]["name"]
+    assert person[:company][:country] == body["company"]["country"]
+  end
+
+  test_with_server "can set some attributes for the built response body" do
+    route "/person", do: FakeResponseFactory.build(:person, name: "John", email: "john@myawesomemail.com")
+
+    response = HTTPoison.get! FakeServer.address <> "/person"
+    body = Poison.decode!(response.body)
+
+    assert response.status_code == 200
+    assert body["name"] == "John"
+    assert body["email"] == "john@myawesomemail.com"
+  end
+
+  test_with_server "can set custom response headers" do
+    route "/person", do: FakeResponseFactory.build(:person, %{"Content-Type" => "application/x-www-form-urlencoded"})
+
+    response = HTTPoison.get! FakeServer.address <> "/person"
+
+    assert response.status_code == 200
+    assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/x-www-form-urlencoded"} end)
+  end
+
+  test_with_server "create a list of responses" do
+    person_list = FakeResponseFactory.build_list(3, :person)
+
+    route "/person", do: person_list
+
+    Enum.each(person_list, fn(person) ->
+      response = HTTPoison.get! FakeServer.address <> "/person"
+      body = Poison.decode!(response.body)
+
+      assert response.status_code == 200
+      assert person.body[:name] == body["name"]
+      assert person.body[:email] == body["email"]
+      assert person.body[:company][:name] == body["company"]["name"]
+      assert person.body[:company][:country] == body["company"]["country"]
+    end)
+  end
+end
+```
 ### Server configuration
 
 The `test_with_server` macro accepts a keyword list with arguments to the server that will be created.
