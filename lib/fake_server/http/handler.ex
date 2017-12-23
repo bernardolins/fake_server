@@ -36,7 +36,6 @@ defmodule FakeServer.HTTP.Handler do
   defp choose_server_response(spec, path, conn) do
     case ServerSpec.response_for(spec, path) do
       %FakeServer.HTTP.Response{} = response ->
-        #TODO: Always reply 'response'
         handle_response_list(spec, path, response, [])
       [module: _, function: _] = controller ->
         handle_controller(spec, path, controller, conn)
