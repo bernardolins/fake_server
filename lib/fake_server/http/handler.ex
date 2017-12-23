@@ -35,13 +35,20 @@ defmodule FakeServer.HTTP.Handler do
   end
 
   defp reply(spec, path, conn) do
-    response = case ServerSpec.response_list_for(spec, path) do
+    response = case ServerSpec.response_for(spec, path) do
+      nil -> spec.default_response
       [] -> spec.default_response
       [response|remaining_responses] ->
         spec
-        |> ServerSpec.configure_response_list_for(path, remaining_responses)
+        |> ServerSpec.configure_response_for(path, remaining_responses)
         |> ServerAgent.save_spec
         response
+      %FakeServer.HTTP.Response{} = response -> response
+      response when is_function(response) ->
+        case response.(conn) do
+          %FakeServer.HTTP.Response{} = response -> response
+          _ -> spec.default_response
+        end
     end
 
     try do

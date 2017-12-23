@@ -14,6 +14,14 @@ defmodule FakeServer.HTTP.Server do
     {:ok, server_spec.id, server_spec.port}
   end
 
+  def add_response(server_id, path, response) do
+    spec = ServerAgent.get_spec(server_id)
+    spec
+    |> ServerSpec.configure_response_for(path, response)
+    |> update_router
+    |> ServerAgent.save_spec
+  end
+
   def add_route(server_id, path, response_list \\ []) do
     spec = ServerAgent.get_spec(server_id)
     spec

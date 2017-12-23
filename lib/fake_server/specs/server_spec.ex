@@ -32,6 +32,19 @@ defmodule FakeServer.Specs.ServerSpec do
     end
   end
 
+  def response_for(%ServerSpec{} = spec, path) do
+    case spec.paths[path] do
+      nil -> nil
+      path_spec -> PathSpec.response(path_spec)
+    end
+  end
+
+  def configure_response_for(%ServerSpec{} = spec, path, new_response) do
+    path_spec = (spec.paths[path] || PathSpec.new) |> PathSpec.configure_response(new_response)
+    new_path_list = Map.put(spec.paths, path, path_spec)
+    %ServerSpec{spec | paths: new_path_list}
+  end
+
   def configure_response_list_for(%ServerSpec{} = spec, path, new_response_list) do
     new_response_list = List.wrap(new_response_list)
     path_spec = (spec.paths[path] || PathSpec.new) |> PathSpec.configure_response_list(new_response_list)
