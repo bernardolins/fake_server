@@ -14,7 +14,6 @@ defmodule FakeServer.HTTP.Handler do
         update_hits(spec.id)
         path = elem(:cowboy_req.path(conn), 0)
         spec
-        |> check_controller(path, conn)
         |> reply(path, conn)
     end
 
@@ -23,33 +22,8 @@ defmodule FakeServer.HTTP.Handler do
 
   def terminate(_reason, _req, _state), do: :ok
 
-  defp check_controller(spec, path, conn) do
-    case ServerSpec.controller_for(spec, path) do
-      nil -> spec
-      controller ->
-        controller_response_list = apply(controller[:module], controller[:function], [conn])
-        spec
-        |> ServerSpec.configure_response_list_for(path, controller_response_list)
-        |> ServerAgent.save_spec
-    end
-  end
-
   defp reply(spec, path, conn) do
-    response = case ServerSpec.response_for(spec, path) do
-      nil -> spec.default_response
-      [] -> spec.default_response
-      [response|remaining_responses] ->
-        spec
-        |> ServerSpec.configure_response_for(path, remaining_responses)
-        |> ServerAgent.save_spec
-        response
-      %FakeServer.HTTP.Response{} = response -> response
-      response when is_function(response) ->
-        case response.(conn) do
-          %FakeServer.HTTP.Response{} = response -> response
-          _ -> spec.default_response
-        end
-    end
+    response = choose_server_response(spec, path, conn)
 
     try do
       headers = validate_headers(response.headers)
@@ -57,6 +31,48 @@ defmodule FakeServer.HTTP.Handler do
       :cowboy_req.reply(response.code, headers, body, conn)
     rescue e in ArgumentError -> :cowboy_req.reply(500, [], ~s<{"message":#{inspect e.message}}>, conn)
     end
+  end
+
+  defp choose_server_response(spec, path, conn) do
+    case ServerSpec.response_for(spec, path) do
+      %FakeServer.HTTP.Response{} = response ->
+        #TODO: Always reply 'response'
+        handle_response_list(spec, path, response, [])
+      [module: _, function: _] = controller ->
+        handle_controller(spec, path, controller, conn)
+      [response|remaining_responses] ->
+        handle_response_list(spec, path, response, remaining_responses)
+      function when is_function(function) ->
+        handle_function(spec, path, function, conn)
+      _ ->
+        spec.default_response
+    end
+  end
+
+  defp handle_function(spec, path, function, conn) do
+    function_output = function.(conn)
+    case function_output do
+      %FakeServer.HTTP.Response{} = response ->
+        response
+      [response|remaining_responses] ->
+        handle_response_list(spec, path, response, remaining_responses)
+      _ ->
+        spec.default_response
+    end
+  end
+
+  defp handle_response_list(spec, path, response, remaining_responses) do
+    spec
+    |> ServerSpec.configure_response_for(path, remaining_responses)
+    |> ServerAgent.save_spec
+    response
+  end
+
+  defp handle_controller(spec, path, controller, conn) do
+    controller_function = fn(conn) ->
+      apply(controller[:module], controller[:function], [conn])
+    end
+    handle_function(spec, path, controller_function, conn)
   end
 
   defp update_hits(server_id) do

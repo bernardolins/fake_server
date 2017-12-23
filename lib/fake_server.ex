@@ -119,14 +119,15 @@ defmodule FakeServer do
 
   3. A `FakeController`. In this case, the responses will be given dynamically, according to request parameters. For more details see `FakeController`.
   """
+
+  # DEPRECATED: Keep Backward compatibility
+  defmacro route(path, response_block \\ nil)
   defmacro route(path, do: response_block) do
     quote do
       current_id = var!(current_id, FakeServer)
       env = EnvAgent.get_env(current_id)
       EnvAgent.save_env(current_id, %FakeServer.Env{env | routes: [unquote(path)|env.routes]})
-
-      unquote(response_block)
-      |> FakeServer.save_route_response(current_id, unquote(path))
+      Server.add_response(current_id, unquote(path), unquote(response_block))
     end
   end
 
@@ -135,17 +136,9 @@ defmodule FakeServer do
       current_id = var!(current_id, FakeServer)
       env = EnvAgent.get_env(current_id)
       EnvAgent.save_env(current_id, %FakeServer.Env{env | routes: [unquote(path)|env.routes]})
-
-      unquote(response_block)
-      |> FakeServer.save_route_response(current_id, unquote(path))
+      Server.add_response(current_id, unquote(path), unquote(response_block))
     end
   end
-
-
-  def save_route_response([module: _, function: _] = response, current_id, path), do: Server.add_controller(current_id, path, response)
-  def save_route_response(%FakeServer.HTTP.Response{} = response, current_id, path), do: Server.add_response(current_id, path, response)
-  def save_route_response(response, current_id, path) when is_list(response), do: Server.add_response(current_id, path, response)
-  def save_route_response(response, current_id, path) when is_function(response), do: Server.add_response(current_id, path, response)
 
   @doc """
   Returns the current server environment.
