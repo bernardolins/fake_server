@@ -115,6 +115,14 @@ defmodule FakeServer.FakeServerIntegrationTest do
     assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
+  test_with_server "returns default_response if no response is configured to the given route" do
+    route "/"
+
+    response = HTTPoison.get! FakeServer.address <> "/"
+    assert response.status_code == 200
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
+  end
+
   test_with_server "accepts a single element instead of a list" do
     route "/test", Response.bad_request
 
