@@ -372,15 +372,6 @@ defmodule FakeServer.FakeServerIntegrationTest do
       refute Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/x-www-form-urlencoded"} end)
     end
 
-    test_with_server "test timeout" do
-      route "/", fn(_) ->
-        :timer.sleep(1_000)
-        FakeServer.HTTP.Response.ok
-      end
-      HTTPoison.get! FakeServer.address <> "/"
-    end
-
-
     test_with_server "create a list of responses" do
       person_list = FakeResponseFactory.build_list(3, :person)
 
