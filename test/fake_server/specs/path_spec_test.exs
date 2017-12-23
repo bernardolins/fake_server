@@ -10,36 +10,24 @@ defmodule FakeServer.Specs.PathSpecTest do
     end
   end
 
-  describe "#response_list" do
+  describe "#response" do
     test "returns a response list for a path" do
-      spec = PathSpec.new |> PathSpec.configure_response_list([Response.ok])
-      assert PathSpec.response_list(spec) == [Response.ok]
+      spec = PathSpec.new |> PathSpec.configure_response([Response.ok])
+      assert PathSpec.response(spec) == [Response.ok]
     end
 
     test "returns [] if response list not set" do
       spec = PathSpec.new
-      assert PathSpec.response_list(spec) == []
+      assert PathSpec.response(spec) == nil
     end
   end
 
-  describe "#configure_response_list" do
+  describe "#configure_response" do
     test "sets response list for a path" do
       spec = PathSpec.new
-      assert PathSpec.response_list(spec) == []
-      spec = PathSpec.new |> PathSpec.configure_response_list([Response.ok])
-      assert PathSpec.response_list(spec) == [Response.ok]
-    end
-  end
-
-  describe "#controller" do
-    test "returns a controller for a path" do
-      spec = PathSpec.new |> PathSpec.configure_controller([module: SomeModule, function: :some_function])
-      assert PathSpec.controller(spec) == [module: SomeModule, function: :some_function]
-    end
-
-    test "returns [] if response list not set" do
-      spec = PathSpec.new
-      assert PathSpec.controller(spec) == nil
+      assert PathSpec.response(spec) == nil
+      spec = PathSpec.new |> PathSpec.configure_response([Response.ok])
+      assert PathSpec.response(spec) == [Response.ok]
     end
   end
 end
