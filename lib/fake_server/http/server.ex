@@ -22,22 +22,6 @@ defmodule FakeServer.HTTP.Server do
     |> ServerAgent.save_spec
   end
 
-  def add_route(server_id, path, response_list \\ []) do
-    spec = ServerAgent.get_spec(server_id)
-    spec
-    |> ServerSpec.configure_response_list_for(path, response_list)
-    |> update_router
-    |> ServerAgent.save_spec
-  end
-
-  def add_controller(server_id, path, [module: _, function: _] = controller) do
-    spec = ServerAgent.get_spec(server_id)
-    spec
-    |> ServerSpec.configure_controller_for(path, controller)
-    |> update_router
-    |> ServerAgent.save_spec
-  end
-
   def set_default_response(server_id, %Response{} = default_response) do
     spec = ServerAgent.get_spec(server_id)
     spec

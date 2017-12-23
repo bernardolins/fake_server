@@ -1,7 +1,7 @@
 defmodule FakeServer.Specs.ServerSpec do
   @moduledoc false
 
-  defstruct [id: nil, paths: %{}, controllers: %{}, default_response: FakeServer.HTTP.Response.default, port: nil]
+  defstruct [id: nil, paths: %{}, default_response: FakeServer.HTTP.Response.default, port: nil]
   @enforce_keys[:name]
 
   @id_length 16
@@ -25,13 +25,6 @@ defmodule FakeServer.Specs.ServerSpec do
     Map.keys(spec.paths)
   end
 
-  def response_list_for(%ServerSpec{} = spec, path) do
-    case spec.paths[path] do
-      nil -> nil
-      path_spec -> PathSpec.response_list(path_spec)
-    end
-  end
-
   def response_for(%ServerSpec{} = spec, path) do
     case spec.paths[path] do
       nil -> nil
@@ -45,32 +38,12 @@ defmodule FakeServer.Specs.ServerSpec do
     %ServerSpec{spec | paths: new_path_list}
   end
 
-  def configure_response_list_for(%ServerSpec{} = spec, path, new_response_list) do
-    new_response_list = List.wrap(new_response_list)
-    path_spec = (spec.paths[path] || PathSpec.new) |> PathSpec.configure_response_list(new_response_list)
-    new_path_list = Map.put(spec.paths, path, path_spec)
-    %ServerSpec{spec | paths: new_path_list}
-  end
-
-  def controller_for(%ServerSpec{} = spec, path) do
-    case spec.paths[path] do
-      nil -> nil
-      path_spec -> PathSpec.controller(path_spec)
-    end
-  end
-
-  def configure_controller_for(%ServerSpec{} = spec, path, [module: _, function: _] = new_controller) do
-    path_spec = (spec.paths[path] || PathSpec.new) |> PathSpec.configure_controller(new_controller)
-    new_path_list = Map.put(spec.paths, path, path_spec)
-    %ServerSpec{spec | paths: new_path_list}
-  end
-
   def default_response(%ServerSpec{} = spec) do
     spec.default_response
   end
 
   def configure_default_response(%ServerSpec{} = spec, new_default_response) do
-    spec = configure_response_list_for(spec, :_, [])
+    spec = configure_response_for(spec, :_, [])
     %ServerSpec{spec | default_response: new_default_response}
   end
 
