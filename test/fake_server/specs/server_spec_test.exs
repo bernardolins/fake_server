@@ -51,78 +51,36 @@ defmodule FakeServer.Specs.ServerSpecTest do
     end
   end
 
-  describe "#response_list_for" do
+  describe "#response_for" do
     test "returns nil when path does not exists on spec" do
       assert ServerSpec.new
-      |> ServerSpec.response_list_for("/path") == nil
+      |> ServerSpec.response_for("/path") == nil
     end
 
     test "returns [] when path exists but list is empty" do
-      spec = ServerSpec.new |> ServerSpec.configure_response_list_for("/path", [])
-      assert ServerSpec.response_list_for(spec, "/path") == []
+      spec = ServerSpec.new |> ServerSpec.configure_response_for("/path", [])
+      assert ServerSpec.response_for(spec, "/path") == []
     end
 
     test "returns a list when path exists and list is not empty" do
-      spec = ServerSpec.new |> ServerSpec.configure_response_list_for("/path", [FakeServer.HTTP.Response.ok])
-      assert ServerSpec.response_list_for(spec, "/path") == [FakeServer.HTTP.Response.ok]
+      spec = ServerSpec.new |> ServerSpec.configure_response_for("/path", [FakeServer.HTTP.Response.ok])
+      assert ServerSpec.response_for(spec, "/path") == [FakeServer.HTTP.Response.ok]
     end
   end
 
   describe "#configure_response_list" do
     test "saves an empty list to path on a server" do
       spec = ServerSpec.new
-      assert ServerSpec.response_list_for(spec, "/path") == nil
-      spec = ServerSpec.configure_response_list_for(spec, "/path", [])
-      assert ServerSpec.response_list_for(spec, "/path") == []
+      assert ServerSpec.response_for(spec, "/path") == nil
+      spec = ServerSpec.configure_response_for(spec, "/path", [])
+      assert ServerSpec.response_for(spec, "/path") == []
     end
 
     test "saves a list to path on a server" do
       spec = ServerSpec.new
-      assert ServerSpec.response_list_for(spec, "/path") == nil
-      spec = ServerSpec.configure_response_list_for(spec, "/path", [FakeServer.HTTP.Response.ok])
-      assert ServerSpec.response_list_for(spec, "/path") == [FakeServer.HTTP.Response.ok]
-    end
-
-    test "saves a single element as a list to path on a server" do
-      spec = ServerSpec.new
-      assert ServerSpec.response_list_for(spec, "/path") == nil
-      spec = ServerSpec.configure_response_list_for(spec, "/path", FakeServer.HTTP.Response.ok)
-      assert ServerSpec.response_list_for(spec, "/path") == [FakeServer.HTTP.Response.ok]
-    end
-  end
-
-  describe "#controller_for" do
-    test "returns nil when path does not exists on spec" do
-      assert ServerSpec.new
-      |> ServerSpec.controller_for("/path") == nil
-    end
-
-    test "returns nil if path is configured without a controller" do
-      spec = ServerSpec.new |> ServerSpec.configure_response_list_for("/path", FakeServer.HTTP.Response.ok)
-      assert ServerSpec.controller_for(spec, "/path") == nil
-    end
-
-    test "returns a list when path exists and list is not empty" do
-      spec = ServerSpec.new |> ServerSpec.configure_controller_for("/path", [module: SomeController, function: :some_function])
-      assert ServerSpec.controller_for(spec, "/path") == [module: SomeController, function: :some_function]
-    end
-  end
-
-  describe "#configure_controller_for" do
-    test "saves a controller to path" do
-      spec = ServerSpec.new
-      assert ServerSpec.controller_for(spec, "/path") == nil
-      spec = ServerSpec.configure_controller_for(spec, "/path", [module: SomeController, function: :some_function])
-      assert ServerSpec.controller_for(spec, "/path") == [module: SomeController, function: :some_function]
-    end
-
-    test "overwrites a controller if one already exist" do
-      spec = ServerSpec.new
-      spec = ServerSpec.configure_controller_for(spec, "/path", [module: SomeController, function: :some_function])
-      assert ServerSpec.controller_for(spec, "/path") == [module: SomeController, function: :some_function]
-
-      spec = ServerSpec.configure_controller_for(spec, "/path", [module: AnotherController, function: :another_function])
-      assert ServerSpec.controller_for(spec, "/path") == [module: AnotherController, function: :another_function]
+      assert ServerSpec.response_for(spec, "/path") == nil
+      spec = ServerSpec.configure_response_for(spec, "/path", [FakeServer.HTTP.Response.ok])
+      assert ServerSpec.response_for(spec, "/path") == [FakeServer.HTTP.Response.ok]
     end
   end
 

@@ -28,7 +28,7 @@ defmodule FakeServer.HTTP.ServerTest do
   describe "When server is running but spec is not found" do
     test "server will always reply 500 with a message on the body" do
       {:ok, server_name, port} = Server.run
-      Server.add_route(server_name, "/test")
+      Server.add_response(server_name, "/test", nil)
       Agent.update(ServerAgent, fn(_) -> [] end)
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
       assert response |> elem(0) |> elem(1) == 500
@@ -46,7 +46,7 @@ defmodule FakeServer.HTTP.ServerTest do
 
     test "server will reply default response if response list is empty" do
       {:ok, server_name, port} = Server.run
-      Server.add_route(server_name, "/test", [])
+      Server.add_response(server_name, "/test", [])
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
       assert response |> elem(0) |> elem(1) == 200
       FakeServer.HTTP.Server.stop(server_name)
@@ -54,7 +54,7 @@ defmodule FakeServer.HTTP.ServerTest do
 
     test "server will reply first response on response list" do
       {:ok, server_name, port} = Server.run
-      Server.add_route(server_name, "/test", [Response.bad_request, Response.forbidden])
+      Server.add_response(server_name, "/test", [Response.bad_request, Response.forbidden])
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
       assert response |> elem(0) |> elem(1) == 400
 
@@ -66,8 +66,8 @@ defmodule FakeServer.HTTP.ServerTest do
     test "default response can be configured and will be returned to every path with response list empty" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_route(server_name, "/test")
-      Server.add_route(server_name, "/test/1")
+      Server.add_response(server_name, "/test", nil)
+      Server.add_response(server_name, "/test/1", nil)
 
       Server.set_default_response(server_name, Response.forbidden)
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
@@ -81,7 +81,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "server will run controller function to check what to reply" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_controller(server_name, "/test", [module: __MODULE__, function: :integration_tests_controller])
+      Server.add_response(server_name, "/test", [module: __MODULE__, function: :integration_tests_controller])
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
       assert response |> elem(0) |> elem(1) == 400
@@ -92,7 +92,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "server will check conn variable on controller function to check what to reply" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_controller(server_name, "/test", [module: __MODULE__, function: :with_conn_controller])
+      Server.add_response(server_name, "/test", [module: __MODULE__, function: :with_conn_controller])
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test?respond_with=404', [{'connection', 'close'}]}, [], [])
       assert response |> elem(0) |> elem(1) == 404
@@ -105,23 +105,11 @@ defmodule FakeServer.HTTP.ServerTest do
       FakeServer.HTTP.Server.stop(server_name)
     end
 
-    test "server will overwrite response list if controller is set to the same path" do
-      {:ok, server_name, port} = Server.run
-
-      Server.add_controller(server_name, "/test", [module: __MODULE__, function: :integration_tests_controller])
-      Server.add_route(server_name, "/test", Response.forbidden)
-
-      {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
-      assert response |> elem(0) |> elem(1) == 400
-
-      FakeServer.HTTP.Server.stop(server_name)
-    end
-
     test "accept a controller on a route and a response list on another" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_controller(server_name, "/test", [module: __MODULE__, function: :integration_tests_controller])
-      Server.add_route(server_name, "/test/1", Response.forbidden)
+      Server.add_response(server_name, "/test", [module: __MODULE__, function: :integration_tests_controller])
+      Server.add_response(server_name, "/test/1", Response.forbidden)
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
       assert response |> elem(0) |> elem(1) == 400
@@ -135,7 +123,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "accept a response with a string as body" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_route(server_name, "/test", Response.ok(~s<{"test":"ok"}>))
+      Server.add_response(server_name, "/test", Response.ok(~s<{"test":"ok"}>))
 
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
@@ -148,7 +136,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "accept a response with a map as body" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}))
+      Server.add_response(server_name, "/test", Response.ok(%{test: "ok"}))
 
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
@@ -161,7 +149,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "accept a response with a header as a map with string as keys" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, %{"Content-Type" => "application/json"}))
+      Server.add_response(server_name, "/test", Response.ok(%{test: "ok"}, %{"Content-Type" => "application/json"}))
 
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
@@ -175,7 +163,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "accept a response with a header as a map" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, %{'Content-Type' => 'application/json'}))
+      Server.add_response(server_name, "/test", Response.ok(%{test: "ok"}, %{'Content-Type' => 'application/json'}))
 
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
@@ -189,7 +177,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "returns 500 with a message if the headers are invalid" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, %{content_type: 'application/json'}))
+      Server.add_response(server_name, "/test", Response.ok(%{test: "ok"}, %{content_type: 'application/json'}))
 
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
@@ -202,7 +190,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "returns 500 with a message if the headers are not either a map or a list" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, 1))
+      Server.add_response(server_name, "/test", Response.ok(%{test: "ok"}, 1))
 
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
@@ -215,7 +203,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "returns 500 with a message if the body is invalid" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_route(server_name, "/test", Response.ok([a: 1]))
+      Server.add_response(server_name, "/test", Response.ok([a: 1]))
 
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
@@ -228,7 +216,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "accept a response with a header as a list" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_route(server_name, "/test", Response.ok(%{test: "ok"}, [{'Content-Type', 'application/json'}]))
+      Server.add_response(server_name, "/test", Response.ok(%{test: "ok"}, [{'Content-Type', 'application/json'}]))
 
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test', [{'connection', 'close'}]}, [], [])
