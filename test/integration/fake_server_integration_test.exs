@@ -435,7 +435,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
     test_with_server "accepts the request object as argument" do
       route "/", fn(req) ->
-        if :cowboy_req.qs_val("token", req) |> elem(0) == "1234" do
+        if req.query["token"]  == "1234" do
           Response.ok
         else
           Response.forbidden
@@ -445,7 +445,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
       response = HTTPoison.get! FakeServer.address <> "/"
       assert response.status_code == 403
 
-      response = HTTPoison.get! FakeServer.address <> "/?token=1234"
+      response = HTTPoison.get! FakeServer.address <> "/?token=1234&abc=def"
       assert response.status_code == 200
     end
   end

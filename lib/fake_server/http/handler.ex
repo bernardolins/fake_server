@@ -49,7 +49,8 @@ defmodule FakeServer.HTTP.Handler do
   end
 
   defp handle_function(spec, path, function, conn) do
-    function_output = function.(conn)
+    request = FakeServer.Request.from_cowboy_req(conn)
+    function_output = function.(request)
     case function_output do
       %FakeServer.HTTP.Response{} = response ->
         response

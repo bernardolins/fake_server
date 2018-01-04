@@ -10,8 +10,8 @@ defmodule FakeServer.HTTP.ServerTest do
     Response.bad_request
   end
 
-  def with_conn_controller(conn) do
-    case :cowboy_req.qs_val("respond_with", conn) |> elem(0) do
+  def with_request_controller(req) do
+    case req.query["respond_with"] do
       "404" -> Response.not_found
       "401" -> Response.unauthorized
       "400" -> Response.bad_request
@@ -92,7 +92,7 @@ defmodule FakeServer.HTTP.ServerTest do
     test "server will check conn variable on controller function to check what to reply" do
       {:ok, server_name, port} = Server.run
 
-      Server.add_response(server_name, "/test", [module: __MODULE__, function: :with_conn_controller])
+      Server.add_response(server_name, "/test", [module: __MODULE__, function: :with_request_controller])
 
       {:ok, response} = :httpc.request(:get, {'http://127.0.0.1:#{port}/test?respond_with=404', [{'connection', 'close'}]}, [], [])
       assert response |> elem(0) |> elem(1) == 404
