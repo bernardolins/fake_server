@@ -448,6 +448,25 @@ defmodule FakeServer.FakeServerIntegrationTest do
       response = HTTPoison.get! FakeServer.address <> "/?token=1234&abc=def"
       assert response.status_code == 200
     end
+
+    test_with_server "can evaluate the request body" do
+      route "/", fn(req) ->
+        if req.body  == ~s<{"test": true}> do
+          Response.ok %{test: true}
+        else
+          Response.ok %{test: false}
+        end
+      end
+
+      address = FakeServer.address <> "/"
+
+      response = HTTPoison.post! address, ~s<{"test": true}>
+      assert response.status_code == 200
+      assert response.body == ~s<{"test":true}>
+
+      response = HTTPoison.post! address, ~s<{}>
+      assert response.body == ~s<{"test":false}>
+    end
   end
 end
 
