@@ -1,4 +1,5 @@
 defmodule FakeServer.Request do
+  @moduledoc false
   defstruct [
     method: "",
     body: "",
@@ -52,7 +53,9 @@ defmodule FakeServer.Request do
   end
 
   defp query(cowboy_req) do
-    query_string(cowboy_req)
+    qs = query_string(cowboy_req)
+
+    qs
     |> String.split("&")
     |> create_query_map
   end
@@ -60,7 +63,7 @@ defmodule FakeServer.Request do
   defp create_query_map([""]), do: %{}
   defp create_query_map(query_list) do
     query_list
-    |> Enum.map(fn(query) -> String.split(query, "=") |> List.to_tuple end)
+    |> Enum.map(fn(query) -> List.to_tuple(String.split(query, "=")) end)
     |> Enum.into(%{})
   end
 end
