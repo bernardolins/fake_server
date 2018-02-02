@@ -41,6 +41,41 @@ defmodule FakeServer.HTTP.Response do
   def already_reported(body \\ "", headers \\ %{}), do: new(208, body, headers)
   def im_used(body \\ "", headers \\ %{}), do: new(226, body, headers)
 
+  @doc """
+    Returns a list with all 4xx HTTP methods available
+  """
+  def all_4xx do
+    [
+      bad_request(),
+      unauthorized(),
+      payment_required(),
+      forbidden(),
+      not_found(),
+      method_not_allowed(),
+      not_acceptable(),
+      proxy_authentication_required(),
+      request_timeout(),
+      conflict(),
+      gone(),
+      length_required(),
+      precondition_failed(),
+      payload_too_large(),
+      uri_too_long(),
+      unsupported_media_type(),
+      expectation_failed(),
+      im_a_teapot(),
+      misdirected_request(),
+      unprocessable_entity(),
+      locked(),
+      failed_dependency(),
+      upgrade_required(),
+      precondition_required(),
+      too_many_requests(),
+      request_header_fields_too_large(),
+      unavailable_for_legal_reasons()
+    ]
+  end
+
   # 4xx
   def bad_request(body \\ "", headers \\ %{}), do: new(400, body, headers)
   def unauthorized(body \\ "", headers \\ %{}), do: new(401, body, headers)
@@ -69,6 +104,26 @@ defmodule FakeServer.HTTP.Response do
   def too_many_requests(body \\ "", headers \\ %{}), do: new(429, body, headers)
   def request_header_fields_too_large(body \\ "", headers \\ %{}), do: new(431, body, headers)
   def unavailable_for_legal_reasons(body \\ "", headers \\ %{}), do: new(451, body, headers)
+
+
+  @doc """
+    Returns a list with all 4xx HTTP methods available
+  """
+  def all_5xx do
+    [
+      internal_server_error(),
+      not_implemented(),
+      bad_gateway(),
+      service_unavailable(),
+      gateway_timeout(),
+      http_version_not_supported(),
+      variant_also_negotiates(),
+      insufficient_storage(),
+      loop_detected(),
+      not_extended(),
+      network_authentication_required()
+    ]
+  end
 
   # 5xx
   def internal_server_error(body \\ "", headers \\ %{}), do: new(500, body, headers)
