@@ -66,6 +66,13 @@ defmodule ResponseTest do
   end
 
   describe "4XX" do
+    test "all_4xx responds a list with all 4xx status code" do
+      assert length(Response.all_4xx) == 27
+      Enum.each(Response.all_4xx, fn(response) ->
+        assert response.code >= 400 && response.code <= 451
+      end)
+    end
+
     test "returns the correspondent status code with a map as response body" do
       assert Response.bad_request(%{status_kind: "4xx"})== %Response{code: 400, body: %{status_kind: "4xx"}, headers: %{}}
       assert Response.unauthorized(%{status_kind: "4xx"})== %Response{code: 401, body: %{status_kind: "4xx"}, headers: %{}}
@@ -127,17 +134,26 @@ defmodule ResponseTest do
     end
   end
 
-  test "5xx" do
-    assert Response.internal_server_error ==  %Response{code: 500, body: "", headers: %{}}
-    assert Response.not_implemented ==  %Response{code: 501, body: "", headers: %{}}
-    assert Response.bad_gateway ==  %Response{code: 502, body: "", headers: %{}}
-    assert Response.service_unavailable ==  %Response{code: 503, body: "", headers: %{}}
-    assert Response.gateway_timeout ==  %Response{code: 504, body: "", headers: %{}}
-    assert Response.http_version_not_supported ==  %Response{code: 505, body: "", headers: %{}}
-    assert Response.variant_also_negotiates ==  %Response{code: 506, body: "", headers: %{}}
-    assert Response.insufficient_storage ==  %Response{code: 507, body: "", headers: %{}}
-    assert Response.loop_detected ==  %Response{code: 508, body: "", headers: %{}}
-    assert Response.not_extended ==  %Response{code: 510, body: "", headers: %{}}
-    assert Response.network_authentication_required ==  %Response{code: 511, body: "", headers: %{}}
+  describe "5xx" do
+    test "all_5xx responds a list with all 5xx status code" do
+      assert length(Response.all_5xx) == 11
+      Enum.each(Response.all_5xx, fn(response) ->
+        assert response.code >= 500 && response.code <= 511
+      end)
+    end
+
+    test "5xx" do
+      assert Response.internal_server_error ==  %Response{code: 500, body: "", headers: %{}}
+      assert Response.not_implemented ==  %Response{code: 501, body: "", headers: %{}}
+      assert Response.bad_gateway ==  %Response{code: 502, body: "", headers: %{}}
+      assert Response.service_unavailable ==  %Response{code: 503, body: "", headers: %{}}
+      assert Response.gateway_timeout ==  %Response{code: 504, body: "", headers: %{}}
+      assert Response.http_version_not_supported ==  %Response{code: 505, body: "", headers: %{}}
+      assert Response.variant_also_negotiates ==  %Response{code: 506, body: "", headers: %{}}
+      assert Response.insufficient_storage ==  %Response{code: 507, body: "", headers: %{}}
+      assert Response.loop_detected ==  %Response{code: 508, body: "", headers: %{}}
+      assert Response.not_extended ==  %Response{code: 510, body: "", headers: %{}}
+      assert Response.network_authentication_required ==  %Response{code: 511, body: "", headers: %{}}
+    end
   end
 end
