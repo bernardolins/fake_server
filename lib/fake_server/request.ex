@@ -1,5 +1,17 @@
 defmodule FakeServer.Request do
-  @moduledoc false
+  @moduledoc """
+  Stores some information about a request when it arrives the server.
+
+  ## Structure Fields:
+
+    - `method`: a string with the HTTP request method.
+    - `body`: a string with the body of the request.
+    - `headers`: a map with the request headers.
+    - `path`: a string with the request path.
+    - `cookies`: a map with the request cookies.
+    - `query_string`: a string with the query_string.
+    - `query`: a map with each one of the parameters from the query string.
+  """
   defstruct [
     method: "",
     body: "",
@@ -10,6 +22,7 @@ defmodule FakeServer.Request do
     query: %{}
   ]
 
+  @doc false
   def from_cowboy_req(cowboy_req) do
     %__MODULE__{
       method: method(cowboy_req),
