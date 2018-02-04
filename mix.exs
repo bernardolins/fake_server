@@ -43,7 +43,7 @@ defmodule FakeServer.Mixfile do
 
 	defp description do
     """
-    FakeServer makes it easy to create mocks for HTTP servers in your tests. It integrates very well with ExUnit, but can also be used as a standalone server.
+    With FakeServer you can create individual HTTP servers for each test case, allowing external requests to be tested without the need for mocks.
     """
   end
 
