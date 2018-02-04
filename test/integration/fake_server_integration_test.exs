@@ -468,5 +468,42 @@ defmodule FakeServer.FakeServerIntegrationTest do
       assert response.body == ~s<{"test":false}>
     end
   end
+
+  test_with_server "can handle all 2xx status codes" do
+    response_list = [
+      Response.ok,
+      Response.created,
+      Response.accepted,
+      Response.non_authoritative_information,
+      Response.no_content,
+      Response.reset_content,
+      Response.partial_content
+    ]
+
+    route "/", response_list
+
+    Enum.each(response_list, fn(response) ->
+      get_response = HTTPoison.get! FakeServer.address <> "/"
+      assert get_response.status_code == response.code
+    end)
+  end
+
+  test_with_server "can handle all 4xx status codes" do
+    route "/", Response.all_4xx
+
+    Enum.each(Response.all_4xx, fn(response) ->
+      get_response = HTTPoison.get! FakeServer.address <> "/"
+      assert get_response.status_code == response.code
+    end)
+  end
+
+  test_with_server "can handle all 5xx status codes" do
+    route "/", Response.all_5xx
+
+    Enum.each(Response.all_5xx, fn(response) ->
+      get_response = HTTPoison.get! FakeServer.address <> "/"
+      assert get_response.status_code == response.code
+    end)
+  end
 end
 

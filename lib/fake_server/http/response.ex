@@ -65,28 +65,12 @@ defmodule FakeServer.HTTP.Response do
   def partial_content(body \\ "", headers \\ %{}), do: new(206, body, headers)
 
   @doc """
-  Creates a new response with status code 207
-  """
-  def multi_status(body \\ "", headers \\ %{}), do: new(207, body, headers)
-
-  @doc """
-  Creates a new response with status code 208
-  """
-  def already_reported(body \\ "", headers \\ %{}), do: new(208, body, headers)
-
-  @doc """
-  Creates a new response with status code 226
-  """
-  def im_used(body \\ "", headers \\ %{}), do: new(226, body, headers)
-
-  @doc """
   Returns a list with all 4xx HTTP methods available
   """
   def all_4xx do
     [
       bad_request(),
       unauthorized(),
-      payment_required(),
       forbidden(),
       not_found(),
       method_not_allowed(),
@@ -102,15 +86,13 @@ defmodule FakeServer.HTTP.Response do
       unsupported_media_type(),
       expectation_failed(),
       im_a_teapot(),
-      misdirected_request(),
       unprocessable_entity(),
       locked(),
       failed_dependency(),
       upgrade_required(),
       precondition_required(),
       too_many_requests(),
-      request_header_fields_too_large(),
-      unavailable_for_legal_reasons()
+      request_header_fields_too_large()
     ]
   end
 
@@ -123,11 +105,6 @@ defmodule FakeServer.HTTP.Response do
   Creates a new response with status code 401
   """
   def unauthorized(body \\ "", headers \\ %{}), do: new(401, body, headers)
-
-  @doc """
-  Creates a new response with status code 402
-  """
-  def payment_required(body \\ "", headers \\ %{}), do: new(402, body, headers)
 
   @doc """
   Creates a new response with status code 403
@@ -205,11 +182,6 @@ defmodule FakeServer.HTTP.Response do
   def im_a_teapot(body \\ "", headers \\ %{}), do: new(418, body, headers)
 
   @doc """
-  Creates a new response with status code 421
-  """
-  def misdirected_request(body \\ "", headers \\ %{}), do: new(421, body, headers)
-
-  @doc """
   Creates a new response with status code 422
   """
   def unprocessable_entity(body \\ "", headers \\ %{}), do: new(422, body, headers)
@@ -245,12 +217,6 @@ defmodule FakeServer.HTTP.Response do
   def request_header_fields_too_large(body \\ "", headers \\ %{}), do: new(431, body, headers)
 
   @doc """
-  Creates a new response with status code 451
-  """
-  def unavailable_for_legal_reasons(body \\ "", headers \\ %{}), do: new(451, body, headers)
-
-
-  @doc """
   Returns a list with all 5xx HTTP methods available
   """
   def all_5xx do
@@ -263,7 +229,6 @@ defmodule FakeServer.HTTP.Response do
       http_version_not_supported(),
       variant_also_negotiates(),
       insufficient_storage(),
-      loop_detected(),
       not_extended(),
       network_authentication_required()
     ]
@@ -308,11 +273,6 @@ defmodule FakeServer.HTTP.Response do
   Creates a new response with status code 507
   """
   def insufficient_storage(body \\ "", headers \\ %{}), do: new(507, body, headers)
-
-  @doc """
-  Creates a new response with status code 508
-  """
-  def loop_detected(body \\ "", headers \\ %{}), do: new(508, body, headers)
 
   @doc """
   Creates a new response with status code 510
