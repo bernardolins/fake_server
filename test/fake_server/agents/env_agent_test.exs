@@ -25,7 +25,11 @@ defmodule FakeServer.Agents.EnvAgentTest do
     end
 
     test "throw :noproc error when stopping an agent that was not started" do
-      assert catch_exit(EnvAgent.stop) == :noproc
+      throw_value = case catch_exit(EnvAgent.stop) do
+        value when is_tuple(value) -> elem(value, 0)
+        value -> value
+      end
+      assert throw_value == :noproc
     end
   end
 
