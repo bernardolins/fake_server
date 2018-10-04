@@ -23,7 +23,7 @@ defmodule FakeServer.Mixfile do
       {:poison, ">= 1.0.0"},
       {:mock, "~> 0.3", only: :test},
       {:faker, "~> 0.9", only: :test},
-      {:ex_doc, ">= 0.0.0", only: :dev},
+      {:ex_doc, "~> 0.19", only: :dev},
       {:httpoison, "~> 0.13", only: :test},
       {:excoveralls, "~> 0.7", only: :test},
       {:inch_ex, "~> 0.5", only: [:dev, :test]},
