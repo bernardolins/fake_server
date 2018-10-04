@@ -19,7 +19,6 @@ otp_release:
   - 20.0
 script:
   - mix coveralls.travis
-  - mix credo
   - mix inch.report
 env:
   - MIX_ENV=test

@@ -13,32 +13,21 @@ defmodule FakeServer.Mixfile do
      deps: deps()]
   end
 
-  # Configuration for the OTP application
-  #
-  # Type "mix help compile.app" for more information
   def application do
     [applications: [:logger, :cowboy], mod: {FakeServer.Application, []}]
   end
 
-  # Dependencies can be Hex packages:
-  #
-  #   {:mydep, "~> 0.3.0"}
-  #
-  # Or git/path repositories:
-  #
-  #   {:mydep, git: "https://github.com/elixir-lang/mydep.git", tag: "0.1.0"}
-  #
-  # Type "mix help deps" for more examples and options
   defp deps do
-    [{:excoveralls, "~> 0.7", only: :test},
-     {:mock, "~> 0.3", only: :test},
-     {:faker, "~> 0.9", only: :test},
-     {:credo, "~> 0.8", only: [:dev, :test], runtime: false},
-     {:ex_doc, ">= 0.0.0", only: :dev},
-     {:httpoison, "~> 0.13", only: :test},
-     {:inch_ex, "~> 0.5", only: [:dev, :test]},
-     {:poison, ">= 1.0.0"},
-     {:cowboy, "~> 1.1"}]
+    [
+      {:cowboy, "~> 1.1"},
+      {:poison, ">= 1.0.0"},
+      {:mock, "~> 0.3", only: :test},
+      {:faker, "~> 0.9", only: :test},
+      {:ex_doc, ">= 0.0.0", only: :dev},
+      {:httpoison, "~> 0.13", only: :test},
+      {:excoveralls, "~> 0.7", only: :test},
+      {:inch_ex, "~> 0.5", only: [:dev, :test]},
+    ]
   end
 
 	defp description do
