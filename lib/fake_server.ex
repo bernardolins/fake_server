@@ -325,6 +325,26 @@ defmodule FakeServer do
     end
   end
 
+  @doc """
+  Returns the number of requests made to a route in the server.
+
+  You can only call `FakeServer.hits/1` inside `test_with_server/3`.
+
+  ## Usage
+  ```elixir
+  test_with_server "count route hits" do
+    route "/no/cache", FakeServer.HTTP.Response.ok
+    route "/cache", FakeServer.HTTP.Response.ok
+    assert (FakeServer.hits "/no/cache") == 0
+    assert (FakeServer.hits "/cache") == 0
+    HTTPoison.get! FakeServer.address <> "/no/cache"
+    assert (FakeServer.hits "/no/cache") == 1
+    HTTPoison.get! FakeServer.address <> "/cache"
+    assert (FakeServer.hits "/cache") == 1
+    assert FakeServer.hits == 2
+  end
+  ```
+  """
   defmacro hits(path) do
     quote do
       current_id = var!(current_id, FakeServer)
