@@ -2,7 +2,6 @@
 [![Build Status](https://travis-ci.org/bernardolins/fake_server.svg?branch=master)](https://travis-ci.org/bernardolins/fake_server)
 [![Coverage Status](https://coveralls.io/repos/github/bernardolins/fake_server/badge.svg?branch=master)](https://coveralls.io/github/bernardolins/fake_server?branch=master)
 [![Hex.pm](https://img.shields.io/hexpm/dt/fake_server.svg)](https://hex.pm/packages/fake_server)
-[![Inline docs](http://inch-ci.org/github/bernardolins/fake_server.svg?branch=master&style=shields)](http://inch-ci.org/github/bernardolins/fake_server)
 
 With FakeServer you can create individual HTTP servers each test case, allowing external requests to be tested without the need for mocks. It integrates well with ExUnit, keeping the tests clean and readable.
 
