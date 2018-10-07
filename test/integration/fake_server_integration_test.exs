@@ -46,6 +46,18 @@ defmodule FakeServer.FakeServerIntegrationTest do
     assert FakeServer.hits == 2
   end
 
+  test_with_server "save route hits in the environment" do
+    route "/no/cache", FakeServer.HTTP.Response.ok
+    route "/cache", FakeServer.HTTP.Response.ok
+    assert (FakeServer.hits "/no/cache") == 0
+    assert (FakeServer.hits "/cache") == 0
+    HTTPoison.get! FakeServer.address <> "/no/cache"
+    assert (FakeServer.hits "/no/cache") == 1
+    HTTPoison.get! FakeServer.address <> "/cache"
+    assert (FakeServer.hits "/cache") == 1
+    assert FakeServer.hits == 2
+  end
+
   test_with_server "default response can be configured and will be replied response list is empty", [port: 5001, default_response: Response.bad_request] do
     route "/", []
     assert FakeServer.hits == 0
