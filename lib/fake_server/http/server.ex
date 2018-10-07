@@ -31,6 +31,11 @@ defmodule FakeServer.HTTP.Server do
 
   def stop(id), do: :cowboy.stop_listener(id)
 
+  def path_hits( server_id, path) do
+    spec = ServerAgent.get_spec(server_id)
+    spec.paths[path].hits
+  end
+
   defp update_router(spec) do
     :cowboy.set_env(spec.id, :dispatch, (set_router(spec)))
     spec
