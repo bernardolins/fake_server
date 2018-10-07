@@ -14,6 +14,7 @@ defmodule FakeServer.HTTP.Handler do
         update_hits(spec.id)
         path = elem(:cowboy_req.path(conn), 0)
         spec
+        |> update_route_hits(path)
         |> reply(path, conn)
     end
 
@@ -80,6 +81,12 @@ defmodule FakeServer.HTTP.Handler do
       nil -> nil
       env ->  EnvAgent.save_env(server_id, %FakeServer.Env{env | hits: env.hits + 1})
     end
+  end
+
+  defp update_route_hits(spec, path) do
+    update_routes = spec.paths
+    ServerSpec.update_route_hits(spec, path)
+    |> ServerAgent.save_spec
   end
 
   defp validate_headers(headers) when is_list(headers) do
