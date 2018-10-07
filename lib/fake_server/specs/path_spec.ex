@@ -16,4 +16,8 @@ defmodule FakeServer.Specs.PathSpec do
   def configure_response(%PathSpec{} = spec, new_response) do
     %PathSpec{spec | response: new_response}
   end
+
+  def update_hits( %PathSpec{} = spec ) do
+    %{spec | hits: spec.hits + 1}
+  end
 end

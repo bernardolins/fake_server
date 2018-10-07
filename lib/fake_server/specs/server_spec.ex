@@ -47,6 +47,11 @@ defmodule FakeServer.Specs.ServerSpec do
     %ServerSpec{spec | default_response: new_default_response}
   end
 
+  def update_route_hits(%ServerSpec{} = spec, path) do
+    updated_routes = %{spec.paths | path => PathSpec.update_hits(spec.paths[path])}
+    %ServerSpec{spec | paths: updated_routes }
+  end
+
   # thanks http://stackoverflow.com/a/32002566 :)
   defp random_server_id do
     random = :crypto.strong_rand_bytes(@id_length)
