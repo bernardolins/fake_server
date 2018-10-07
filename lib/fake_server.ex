@@ -324,4 +324,12 @@ defmodule FakeServer do
       end
     end
   end
+
+  defmacro hits(path) do
+    quote do
+      current_id = var!(current_id, FakeServer)
+      env = EnvAgent.get_env(current_id)
+      Server.path_hits(current_id, unquote(path) )
+    end
+  end
 end
