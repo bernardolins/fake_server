@@ -84,7 +84,6 @@ defmodule FakeServer.HTTP.Handler do
   end
 
   defp update_route_hits(spec, path) do
-    update_routes = spec.paths
     ServerSpec.update_route_hits(spec, path)
     |> ServerAgent.save_spec
   end
