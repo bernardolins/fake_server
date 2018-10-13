@@ -96,4 +96,35 @@ defmodule FakeServer.RouteTest do
       assert Handler == Route.handler(Route.create!(response: Response.ok))
     end
   end
+
+  describe "#valid?" do
+    test "returns false if path is not a string" do
+      assert false == Route.valid?(%Route{path: 1})
+      assert false == Route.valid?(%Route{path: '/'})
+      assert false == Route.valid?(%Route{path: nil})
+      assert false == Route.valid?(%Route{path: []})
+      assert false == Route.valid?(%Route{path: ['/', 'test']})
+      assert false == Route.valid?(%Route{path: %{}})
+    end
+    test "returns false if path does not starts with a '/'" do
+      assert false == Route.valid?(%Route{path: "abc"})
+      assert false == Route.valid?(%Route{path: "abc/cde"})
+    end
+
+    test "returns false if response is invalid" do
+      assert false == Route.valid?(%Route{response: 1})
+      assert false == Route.valid?(%Route{response: nil})
+      assert false == Route.valid?(%Route{response: "abc"})
+      assert false == Route.valid?(%Route{response: %{}})
+    end
+
+    test "returns true if all validation passes" do
+      assert true == Route.valid?(%Route{})
+      assert true == Route.valid?(Route.create!(path: "/abc/cde"))
+      assert true == Route.valid?(Route.create!(response: fn(_) -> :ok end))
+      assert true == Route.valid?(Route.create!(response: []))
+      assert true == Route.valid?(Route.create!(response: [Response.ok, Response.not_found]))
+      assert true == Route.valid?(Route.create!(response: Response.ok))
+    end
+  end
 end
