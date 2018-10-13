@@ -20,6 +20,34 @@ defmodule ResponseTest do
     end
   end
 
+  describe "#validate" do
+    test "returns {:error, reason} when status code is invalid" do
+      assert {:error, {600, "invalid status code"}} == Response.new(600) |> Response.validate
+      assert {:error, {"200", "invalid status code"}} == FakeServer.HTTP.Response.new("200") |> Response.validate
+      assert {:error, {[], "invalid status code"}} == FakeServer.HTTP.Response.new([]) |> Response.validate
+      assert {:error, {%{}, "invalid status code"}} == FakeServer.HTTP.Response.new(%{}) |> Response.validate
+    end
+
+    test "returns {:error, reason} when header list is not a map" do
+      assert {:error, {1, "response headers must be a map"}} == Response.new(200, "", 1) |> Response.validate
+      assert {:error, {[], "response headers must be a map"}} == Response.new(200, "", []) |> Response.validate
+      assert {:error, {[{"a", "b"}], "response headers must be a map"}} == Response.new(200, "", [{"a", "b"}]) |> Response.validate
+    end
+
+    test "returns {:error, reason} when body is not a map or string" do
+      assert {:error, {1, "body must be a map or a string"}} == Response.new(200, 1) |> Response.validate
+      assert {:error, {[], "body must be a map or a string"}} == Response.new(200, []) |> Response.validate
+      assert {:error, {{:a, 1}, "body must be a map or a string"}} == Response.new(200, {:a, 1}) |> Response.validate
+    end
+
+    test "returns :ok when response is valid" do
+      assert :ok == Response.new(200) |> Response.validate
+      assert :ok == Response.new(200, %{}) |> Response.validate
+      assert :ok == Response.new(200, "") |> Response.validate
+      assert :ok == Response.new(200, %{}, %{}) |> Response.validate
+    end
+  end
+
   test "#default" do
     assert Response.default == %Response{code: 200, body: ~s<{"message": "This is a default response from FakeServer"}>, headers: %{}}
   end

@@ -29,6 +29,16 @@ defmodule FakeServer.HTTP.Response do
   """
   def new(status_code, body \\ "", headers \\ %{}), do: %__MODULE__{code: status_code, body: body, headers: headers}
 
+  def validate(%__MODULE__{body: body, code: code, headers: headers}) do
+    cond do
+      not is_map(headers) ->                            {:error, {headers, "response headers must be a map"}}
+      not (is_bitstring(body) or is_map(body)) ->       {:error, {body, "body must be a map or a string"}}
+      not Enum.member?(allowed_status_codes(), code) -> {:error, {code, "invalid status code"}}
+      true ->                                           :ok
+    end
+  end
+  def valid?(_), do: false
+
   @doc """
   Creates a new response with status code 200
   """
@@ -288,6 +298,17 @@ defmodule FakeServer.HTTP.Response do
   FakeServer default response. Used when there are no responses left to reply.
   """
   def default, do: new(200, ~s<{"message": "This is a default response from FakeServer"}>)
+
+  defp allowed_status_codes() do
+    [
+      200, 201, 202, 203, 204, 205, 206,
+      400, 401, 403, 404, 405, 406, 407,
+      408, 409, 410, 411, 412, 413, 414,
+      415, 417, 418, 422, 423, 424, 426,
+      428, 429, 431, 500, 501, 502, 503,
+      504, 505, 506, 507, 510, 511
+    ]
+  end
 end
 
 
