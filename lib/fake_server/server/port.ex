@@ -19,7 +19,7 @@ defmodule FakeServer.Port do
   end
 
   defp choose_random_port() do
-    @default_port_range
+    port_range()
     |> Enum.take_random(@default_port_allocation_attempts)
     |> test_ports()
   end
@@ -29,7 +29,7 @@ defmodule FakeServer.Port do
     if available?(port), do: port, else: test_ports(port_list)
   end
 
-  defp valid?(port), do: Enum.member?(@default_port_range, port)
+  defp valid?(port), do: Enum.member?(port_range(), port)
 
   defp available?(port) do
     case :ranch_tcp.listen(ip: {0, 0, 0, 0}, port: port) do
@@ -39,5 +39,9 @@ defmodule FakeServer.Port do
       {:error, _} ->
         false
     end
+  end
+
+  defp port_range() do
+    Application.get_env(:fake_server, :port_range, @default_port_range)
   end
 end
