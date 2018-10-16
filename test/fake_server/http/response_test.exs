@@ -4,83 +4,77 @@ defmodule ResponseTest do
 
   describe "#new" do
     test "accept the response status code as a mandatory parameter" do
-      assert Response.new(200) == %Response{code: 200, body: "", headers: %{}}
+      assert {:ok, %Response{code: 200}} = Response.new(200)
     end
 
     test "accept the response body as string" do
-      assert Response.new(200, ~s<{"message": "This is a body"}>) == %Response{code: 200, body: ~s<{"message": "This is a body"}>, headers: %{}}
+      assert {:ok, %Response{body: ~s<{"message": "This is a body"}>}} = Response.new(200, ~s<{"message": "This is a body"}>)
     end
 
-    test "accept the response body as map" do
-      assert Response.new(200, %{message: "This is a body", code: 1}) == %Response{code: 200, body: %{message: "This is a body", code: 1}, headers: %{}}
+    test "encode the body if it is a valid json map" do
+      assert {:ok, %Response{body: ~s<{"message":"This is a body","code":1}>}} = Response.new(200, %{message: "This is a body", code: 1})
     end
 
     test "accept the response headers as a map" do
-      assert Response.new(200, "", %{"x-my-header" => "fake-server"}) == %Response{code: 200, body: "", headers: %{"x-my-header" => "fake-server"}}
+      assert {:ok, %Response{headers: %{"x-my-header" => "fake-server"}}} = Response.new(200, "", %{"x-my-header" => "fake-server"})
     end
   end
 
   describe "#validate" do
     test "returns {:error, reason} when status code is invalid" do
-      assert {:error, {600, "invalid status code"}} == Response.new(600) |> Response.validate
-      assert {:error, {"200", "invalid status code"}} == FakeServer.HTTP.Response.new("200") |> Response.validate
-      assert {:error, {[], "invalid status code"}} == FakeServer.HTTP.Response.new([]) |> Response.validate
-      assert {:error, {%{}, "invalid status code"}} == FakeServer.HTTP.Response.new(%{}) |> Response.validate
+      assert {:error, {600, "invalid status code"}} == %Response{code: 600} |> Response.validate
+      assert {:error, {"200", "invalid status code"}} == %Response{code: "200"} |> Response.validate
+      assert {:error, {[], "invalid status code"}} == %Response{code: []} |> Response.validate
+      assert {:error, {%{}, "invalid status code"}} == %Response{code: %{}} |> Response.validate
     end
 
     test "returns {:error, reason} when header list is not a map" do
-      assert {:error, {1, "response headers must be a map"}} == Response.new(200, "", 1) |> Response.validate
-      assert {:error, {[], "response headers must be a map"}} == Response.new(200, "", []) |> Response.validate
-      assert {:error, {[{"a", "b"}], "response headers must be a map"}} == Response.new(200, "", [{"a", "b"}]) |> Response.validate
+      assert {:error, {1, "response headers must be a map"}} == %Response{code: 200, headers: 1} |> Response.validate
+      assert {:error, {[], "response headers must be a map"}} == %Response{code: 200, headers: []} |> Response.validate
+      assert {:error, {[{"a", "b"}], "response headers must be a map"}} == %Response{code: 200, headers:  [{"a", "b"}]} |> Response.validate
     end
 
     test "returns {:error, reason} when body is not a map or string" do
-      assert {:error, {1, "body must be a map or a string"}} == Response.new(200, 1) |> Response.validate
-      assert {:error, {[], "body must be a map or a string"}} == Response.new(200, []) |> Response.validate
-      assert {:error, {{:a, 1}, "body must be a map or a string"}} == Response.new(200, {:a, 1}) |> Response.validate
+      assert {:error, {1, "body must be a map or a string"}} == %Response{code: 200, body: 1} |> Response.validate
+      assert {:error, {[], "body must be a map or a string"}} == %Response{code: 200, body: []} |> Response.validate
+      assert {:error, {{:a, 1}, "body must be a map or a string"}} == %Response{code: 200, body: {:a, 1}} |> Response.validate
     end
 
     test "returns :ok when response is valid" do
-      assert :ok == Response.new(200) |> Response.validate
-      assert :ok == Response.new(200, %{}) |> Response.validate
-      assert :ok == Response.new(200, "") |> Response.validate
-      assert :ok == Response.new(200, %{}, %{}) |> Response.validate
+      assert :ok == %Response{code: 200} |> Response.validate
+      assert :ok == %Response{code: 200, headers: %{}} |> Response.validate
+      assert :ok == %Response{code: 200, body: ""} |> Response.validate
+      assert :ok == %Response{code: 200, body: %{}, headers: %{}} |> Response.validate
     end
   end
 
   test "#default" do
-    assert Response.default == %Response{code: 200, body: ~s<{"message": "This is a default response from FakeServer"}>, headers: %{}}
+    assert {:ok, %Response{code: 200, body: ~s<{"message": "This is a default response from FakeServer"}>, headers: %{}}} == Response.default
+  end
+
+  test "#default!" do
+    assert %Response{code: 200, body: ~s<{"message": "This is a default response from FakeServer"}>, headers: %{}} == Response.default!
   end
 
   describe "2XX" do
-    test "returns the correspondent status code" do
-      assert Response.ok == %Response{code: 200, body: "", headers: %{}}
-      assert Response.created == %Response{code: 201, body: "", headers: %{}}
-      assert Response.accepted == %Response{code: 202, body: "", headers: %{}}
-      assert Response.non_authoritative_information == %Response{code: 203, body: "", headers: %{}}
-      assert Response.no_content == %Response{code: 204, body: "", headers: %{}}
-      assert Response.reset_content == %Response{code: 205, body: "", headers: %{}}
-      assert Response.partial_content == %Response{code: 206, body: "", headers: %{}}
+    test "normal version returns {:ok, response} with the correspondent status code" do
+      assert {:ok, %Response{code: 200, body: "", headers: %{}}} == Response.ok
+      assert {:ok, %Response{code: 201, body: "", headers: %{}}} == Response.created
+      assert {:ok, %Response{code: 202, body: "", headers: %{}}} == Response.accepted
+      assert {:ok, %Response{code: 203, body: "", headers: %{}}} == Response.non_authoritative_information
+      assert {:ok, %Response{code: 204, body: "", headers: %{}}} == Response.no_content
+      assert {:ok, %Response{code: 205, body: "", headers: %{}}} == Response.reset_content
+      assert {:ok, %Response{code: 206, body: "", headers: %{}}} == Response.partial_content
     end
 
-    test "returns the correspondent status code with a json string as body" do
-      assert Response.ok(~s<{"status_kind": "2xx"}>) == %Response{code: 200, body: ~s<{"status_kind": "2xx"}>, headers: %{}}
-      assert Response.created(~s<{"status_kind": "2xx"}>) == %Response{code: 201, body: ~s<{"status_kind": "2xx"}>, headers: %{}}
-      assert Response.accepted(~s<{"status_kind": "2xx"}>) == %Response{code: 202, body: ~s<{"status_kind": "2xx"}>, headers: %{}}
-      assert Response.non_authoritative_information(~s<{"status_kind": "2xx"}>) == %Response{code: 203, body: ~s<{"status_kind": "2xx"}>, headers: %{}}
-      assert Response.no_content(~s<{"status_kind": "2xx"}>) == %Response{code: 204, body: ~s<{"status_kind": "2xx"}>, headers: %{}}
-      assert Response.reset_content(~s<{"status_kind": "2xx"}>) == %Response{code: 205, body: ~s<{"status_kind": "2xx"}>, headers: %{}}
-      assert Response.partial_content(~s<{"status_kind": "2xx"}>) == %Response{code: 206, body: ~s<{"status_kind": "2xx"}>, headers: %{}}
-    end
-
-    test "returns the correspondent status code with a map as response body" do
-      assert Response.ok(%{status_kind: "2xx"}) == %Response{code: 200, body: %{status_kind: "2xx"}, headers: %{}}
-      assert Response.created(%{status_kind: "2xx"}) == %Response{code: 201, body: %{status_kind: "2xx"}, headers: %{}}
-      assert Response.accepted(%{status_kind: "2xx"}) == %Response{code: 202, body: %{status_kind: "2xx"}, headers: %{}}
-      assert Response.non_authoritative_information(%{status_kind: "2xx"}) == %Response{code: 203, body: %{status_kind: "2xx"}, headers: %{}}
-      assert Response.no_content(%{status_kind: "2xx"}) == %Response{code: 204, body: %{status_kind: "2xx"}, headers: %{}}
-      assert Response.reset_content(%{status_kind: "2xx"}) == %Response{code: 205, body: %{status_kind: "2xx"}, headers: %{}}
-      assert Response.partial_content(%{status_kind: "2xx"}) == %Response{code: 206, body: %{status_kind: "2xx"}, headers: %{}}
+    test "! version returns the response with correspondent status code" do
+      assert %Response{code: 200, body: "", headers: %{}} == Response.ok!
+      assert %Response{code: 201, body: "", headers: %{}} == Response.created!
+      assert %Response{code: 202, body: "", headers: %{}} == Response.accepted!
+      assert %Response{code: 203, body: "", headers: %{}} == Response.non_authoritative_information!
+      assert %Response{code: 204, body: "", headers: %{}} == Response.no_content!
+      assert %Response{code: 205, body: "", headers: %{}} == Response.reset_content!
+      assert %Response{code: 206, body: "", headers: %{}} == Response.partial_content!
     end
   end
 
@@ -92,58 +86,58 @@ defmodule ResponseTest do
       end)
     end
 
-    test "returns the correspondent status code with a map as response body" do
-      assert Response.bad_request(%{status_kind: "4xx"})== %Response{code: 400, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.unauthorized(%{status_kind: "4xx"})== %Response{code: 401, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.forbidden(%{status_kind: "4xx"})== %Response{code: 403, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.not_found(%{status_kind: "4xx"})== %Response{code: 404, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.method_not_allowed(%{status_kind: "4xx"})== %Response{code: 405, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.not_acceptable(%{status_kind: "4xx"})== %Response{code: 406, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.proxy_authentication_required(%{status_kind: "4xx"})== %Response{code: 407, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.request_timeout(%{status_kind: "4xx"})== %Response{code: 408, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.conflict(%{status_kind: "4xx"})== %Response{code: 409, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.gone(%{status_kind: "4xx"})== %Response{code: 410, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.length_required(%{status_kind: "4xx"})== %Response{code: 411, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.precondition_failed(%{status_kind: "4xx"})== %Response{code: 412, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.payload_too_large(%{status_kind: "4xx"})== %Response{code: 413, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.uri_too_long(%{status_kind: "4xx"})== %Response{code: 414, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.unsupported_media_type(%{status_kind: "4xx"})== %Response{code: 415, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.expectation_failed(%{status_kind: "4xx"})== %Response{code: 417, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.im_a_teapot(%{status_kind: "4xx"})== %Response{code: 418, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.unprocessable_entity(%{status_kind: "4xx"})== %Response{code: 422, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.locked(%{status_kind: "4xx"})== %Response{code: 423, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.failed_dependency(%{status_kind: "4xx"})== %Response{code: 424, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.upgrade_required(%{status_kind: "4xx"})== %Response{code: 426, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.precondition_required(%{status_kind: "4xx"})== %Response{code: 428, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.too_many_requests(%{status_kind: "4xx"})== %Response{code: 429, body: %{status_kind: "4xx"}, headers: %{}}
-      assert Response.request_header_fields_too_large(%{status_kind: "4xx"})== %Response{code: 431, body: %{status_kind: "4xx"}, headers: %{}}
+    test "normal version returns {:ok, response} with the correspondent status code" do
+      assert {:ok, %Response{code: 400}} = Response.bad_request
+      assert {:ok, %Response{code: 401}} = Response.unauthorized
+      assert {:ok, %Response{code: 403}} = Response.forbidden
+      assert {:ok, %Response{code: 404}} = Response.not_found
+      assert {:ok, %Response{code: 405}} = Response.method_not_allowed
+      assert {:ok, %Response{code: 406}} = Response.not_acceptable
+      assert {:ok, %Response{code: 407}} = Response.proxy_authentication_required
+      assert {:ok, %Response{code: 408}} = Response.request_timeout
+      assert {:ok, %Response{code: 409}} = Response.conflict
+      assert {:ok, %Response{code: 410}} = Response.gone
+      assert {:ok, %Response{code: 411}} = Response.length_required
+      assert {:ok, %Response{code: 412}} = Response.precondition_failed
+      assert {:ok, %Response{code: 413}} = Response.payload_too_large
+      assert {:ok, %Response{code: 414}} = Response.uri_too_long
+      assert {:ok, %Response{code: 415}} = Response.unsupported_media_type
+      assert {:ok, %Response{code: 417}} = Response.expectation_failed
+      assert {:ok, %Response{code: 418}} = Response.im_a_teapot
+      assert {:ok, %Response{code: 422}} = Response.unprocessable_entity
+      assert {:ok, %Response{code: 423}} = Response.locked
+      assert {:ok, %Response{code: 424}} = Response.failed_dependency
+      assert {:ok, %Response{code: 426}} = Response.upgrade_required
+      assert {:ok, %Response{code: 428}} = Response.precondition_required
+      assert {:ok, %Response{code: 429}} = Response.too_many_requests
+      assert {:ok, %Response{code: 431}} = Response.request_header_fields_too_large
     end
 
-    test "returns the correspondent status code with a json string as response body" do
-      assert Response.bad_request(~s<{"status_kind":"4xx"}>)== %Response{code: 400, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.unauthorized(~s<{"status_kind":"4xx"}>)== %Response{code: 401, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.forbidden(~s<{"status_kind":"4xx"}>)== %Response{code: 403, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.not_found(~s<{"status_kind":"4xx"}>)== %Response{code: 404, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.method_not_allowed(~s<{"status_kind":"4xx"}>)== %Response{code: 405, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.not_acceptable(~s<{"status_kind":"4xx"}>)== %Response{code: 406, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.proxy_authentication_required(~s<{"status_kind":"4xx"}>)== %Response{code: 407, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.request_timeout(~s<{"status_kind":"4xx"}>)== %Response{code: 408, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.conflict(~s<{"status_kind":"4xx"}>)== %Response{code: 409, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.gone(~s<{"status_kind":"4xx"}>)== %Response{code: 410, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.length_required(~s<{"status_kind":"4xx"}>)== %Response{code: 411, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.precondition_failed(~s<{"status_kind":"4xx"}>)== %Response{code: 412, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.payload_too_large(~s<{"status_kind":"4xx"}>)== %Response{code: 413, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.uri_too_long(~s<{"status_kind":"4xx"}>)== %Response{code: 414, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.unsupported_media_type(~s<{"status_kind":"4xx"}>)== %Response{code: 415, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.expectation_failed(~s<{"status_kind":"4xx"}>)== %Response{code: 417, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.im_a_teapot(~s<{"status_kind":"4xx"}>)== %Response{code: 418, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.unprocessable_entity(~s<{"status_kind":"4xx"}>)== %Response{code: 422, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.locked(~s<{"status_kind":"4xx"}>)== %Response{code: 423, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.failed_dependency(~s<{"status_kind":"4xx"}>)== %Response{code: 424, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.upgrade_required(~s<{"status_kind":"4xx"}>)== %Response{code: 426, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.precondition_required(~s<{"status_kind":"4xx"}>)== %Response{code: 428, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.too_many_requests(~s<{"status_kind":"4xx"}>)== %Response{code: 429, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
-      assert Response.request_header_fields_too_large(~s<{"status_kind":"4xx"}>)== %Response{code: 431, body: ~s<{"status_kind":"4xx"}>, headers: %{}}
+    test "! version returns the response with correspondent status code" do
+      assert %Response{code: 400} = Response.bad_request!
+      assert %Response{code: 401} = Response.unauthorized!
+      assert %Response{code: 403} = Response.forbidden!
+      assert %Response{code: 404} = Response.not_found!
+      assert %Response{code: 405} = Response.method_not_allowed!
+      assert %Response{code: 406} = Response.not_acceptable!
+      assert %Response{code: 407} = Response.proxy_authentication_required!
+      assert %Response{code: 408} = Response.request_timeout!
+      assert %Response{code: 409} = Response.conflict!
+      assert %Response{code: 410} = Response.gone!
+      assert %Response{code: 411} = Response.length_required!
+      assert %Response{code: 412} = Response.precondition_failed!
+      assert %Response{code: 413} = Response.payload_too_large!
+      assert %Response{code: 414} = Response.uri_too_long!
+      assert %Response{code: 415} = Response.unsupported_media_type!
+      assert %Response{code: 417} = Response.expectation_failed!
+      assert %Response{code: 418} = Response.im_a_teapot!
+      assert %Response{code: 422} = Response.unprocessable_entity!
+      assert %Response{code: 423} = Response.locked!
+      assert %Response{code: 424} = Response.failed_dependency!
+      assert %Response{code: 426} = Response.upgrade_required!
+      assert %Response{code: 428} = Response.precondition_required!
+      assert %Response{code: 429} = Response.too_many_requests!
+      assert %Response{code: 431} = Response.request_header_fields_too_large!
     end
   end
 
@@ -155,17 +149,30 @@ defmodule ResponseTest do
       end)
     end
 
-    test "5xx" do
-      assert Response.internal_server_error ==  %Response{code: 500, body: "", headers: %{}}
-      assert Response.not_implemented ==  %Response{code: 501, body: "", headers: %{}}
-      assert Response.bad_gateway ==  %Response{code: 502, body: "", headers: %{}}
-      assert Response.service_unavailable ==  %Response{code: 503, body: "", headers: %{}}
-      assert Response.gateway_timeout ==  %Response{code: 504, body: "", headers: %{}}
-      assert Response.http_version_not_supported ==  %Response{code: 505, body: "", headers: %{}}
-      assert Response.variant_also_negotiates ==  %Response{code: 506, body: "", headers: %{}}
-      assert Response.insufficient_storage ==  %Response{code: 507, body: "", headers: %{}}
-      assert Response.not_extended ==  %Response{code: 510, body: "", headers: %{}}
-      assert Response.network_authentication_required ==  %Response{code: 511, body: "", headers: %{}}
+    test "normal version returns {:ok, response} with the correspondent status code" do
+      assert {:ok, %Response{code: 500, body: "", headers: %{}}} ==  Response.internal_server_error
+      assert {:ok, %Response{code: 501, body: "", headers: %{}}} ==  Response.not_implemented
+      assert {:ok, %Response{code: 502, body: "", headers: %{}}} ==  Response.bad_gateway
+      assert {:ok, %Response{code: 503, body: "", headers: %{}}} ==  Response.service_unavailable
+      assert {:ok, %Response{code: 504, body: "", headers: %{}}} ==  Response.gateway_timeout
+      assert {:ok, %Response{code: 505, body: "", headers: %{}}} ==  Response.http_version_not_supported
+      assert {:ok, %Response{code: 506, body: "", headers: %{}}} ==  Response.variant_also_negotiates
+      assert {:ok, %Response{code: 507, body: "", headers: %{}}} ==  Response.insufficient_storage
+      assert {:ok, %Response{code: 510, body: "", headers: %{}}} ==  Response.not_extended
+      assert {:ok, %Response{code: 511, body: "", headers: %{}}} ==  Response.network_authentication_required
+    end
+
+    test "! version returns the response with correspondent status code" do
+      assert %Response{code: 500, body: "", headers: %{}} ==  Response.internal_server_error!
+      assert %Response{code: 501, body: "", headers: %{}} ==  Response.not_implemented!
+      assert %Response{code: 502, body: "", headers: %{}} ==  Response.bad_gateway!
+      assert %Response{code: 503, body: "", headers: %{}} ==  Response.service_unavailable!
+      assert %Response{code: 504, body: "", headers: %{}} ==  Response.gateway_timeout!
+      assert %Response{code: 505, body: "", headers: %{}} ==  Response.http_version_not_supported!
+      assert %Response{code: 506, body: "", headers: %{}} ==  Response.variant_also_negotiates!
+      assert %Response{code: 507, body: "", headers: %{}} ==  Response.insufficient_storage!
+      assert %Response{code: 510, body: "", headers: %{}} ==  Response.not_extended!
+      assert %Response{code: 511, body: "", headers: %{}} ==  Response.network_authentication_required!
     end
   end
 end
