@@ -26,6 +26,10 @@ defmodule FakeServer.RouteTest do
       assert {:error, {%{}, message}} == Route.create(response: %{})
     end
 
+    test "returns {:error, reason} if function arity is not 1" do
+      assert {:error, {_, "response function arity must be 1"}} = Route.create(response: fn -> :ok end)
+    end
+
     test "returns {:ok, route} if all validation passes and response is a function" do
       assert {:ok, _} = Route.create(response: fn(_) -> :ok end)
     end
@@ -35,11 +39,11 @@ defmodule FakeServer.RouteTest do
     end
 
     test "returns {:ok, route} if all validation passes and response is a list of Response structs" do
-      assert {:ok, _} = Route.create(response: [Response.ok, Response.not_found])
+      assert {:ok, _} = Route.create(response: [Response.ok!, Response.not_found!])
     end
 
     test "returns {:ok, route} if all validation passes and response is a Response struct" do
-      assert {:ok, _} = Route.create(response: Response.not_found)
+      assert {:ok, _} = Route.create(response: Response.not_found!)
     end
   end
 
@@ -64,6 +68,10 @@ defmodule FakeServer.RouteTest do
       assert_raise FakeServer.Error, fn -> Route.create!(response: %{}) end
     end
 
+    test "raise FakeServer.Error if function arity is not 1" do
+      assert_raise FakeServer.Error, fn -> Route.create!(response: fn -> :ok end) end
+    end
+
     test "returns a Route struct if all validation passes and response is a function" do
       assert %Route{} = Route.create!(response: fn(_) -> :ok end)
     end
@@ -73,11 +81,11 @@ defmodule FakeServer.RouteTest do
     end
 
     test "returns a Route struct if all validation passes and response is a list of Response structs" do
-      assert %Route{} = Route.create!(response: [Response.ok, Response.not_found])
+      assert %Route{} = Route.create!(response: [Response.ok!, Response.not_found!])
     end
 
     test "returns a Route struct if all validation passes and response is a Response struct" do
-      assert %Route{} = Route.create!(response: Response.not_found)
+      assert %Route{} = Route.create!(response: Response.not_found!)
     end
   end
 
@@ -90,10 +98,10 @@ defmodule FakeServer.RouteTest do
 
   describe "#handler" do
     test "returns the route handler" do
-      assert Handler == Route.handler(Route.create!(response: fn(_) -> :ok end))
+      assert FakeServer.Handlers.FunctionHandler == Route.handler(Route.create!(response: fn(_) -> :ok end))
       assert Handler == Route.handler(Route.create!(response: []))
-      assert Handler == Route.handler(Route.create!(response: [Response.ok, Response.not_found]))
-      assert Handler == Route.handler(Route.create!(response: Response.ok))
+      assert Handler == Route.handler(Route.create!(response: [Response.ok!, Response.not_found!]))
+      assert FakeServer.Handlers.ResponseHandler == Route.handler(Route.create!(response: Response.ok!))
     end
   end
 
@@ -123,8 +131,8 @@ defmodule FakeServer.RouteTest do
       assert true == Route.valid?(Route.create!(path: "/abc/cde"))
       assert true == Route.valid?(Route.create!(response: fn(_) -> :ok end))
       assert true == Route.valid?(Route.create!(response: []))
-      assert true == Route.valid?(Route.create!(response: [Response.ok, Response.not_found]))
-      assert true == Route.valid?(Route.create!(response: Response.ok))
+      assert true == Route.valid?(Route.create!(response: [Response.ok!, Response.not_found!]))
+      assert true == Route.valid?(Route.create!(response: Response.ok!))
     end
   end
 end
