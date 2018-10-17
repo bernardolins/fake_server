@@ -2,7 +2,7 @@ defmodule FakeServer.Route do
   defstruct [
     handler: Handler,
     path: "/",
-    response: FakeServer.HTTP.Response.default(),
+    response: FakeServer.HTTP.Response.default!(),
   ]
 
   def create(opts \\ []) do
@@ -52,14 +52,16 @@ defmodule FakeServer.Route do
 
   defp ensure_handler(%__MODULE__{response: response} = route) do
     cond do
-      is_function(response)                               -> {:ok, %__MODULE__{route | handler: Handler}}
+      is_function(response)                               -> {:ok, %__MODULE__{route | handler: FakeServer.Handlers.FunctionHandler}}
       is_list(response)                                   -> {:ok, %__MODULE__{route | handler: Handler}}
-      FakeServer.HTTP.Response.validate(response) == :ok  -> {:ok, %__MODULE__{route | handler: Handler}}
+      FakeServer.HTTP.Response.validate(response) == :ok  -> {:ok, %__MODULE__{route | handler: FakeServer.Handlers.ResponseHandler}}
       true -> {:error, {response, "response must be a function, a Response struct, or a list of Response structs"}}
     end
   end
 
-  defp valid_response?(response) when is_function(response), do: :ok
+  defp valid_response?(response) when is_function(response) do
+    if :erlang.fun_info(response)[:arity] == 1, do: :ok, else: {:error, {response, "response function arity must be 1"}}
+  end
 
   defp valid_response?([]), do: :ok
   defp valid_response?([response|responses]) do
