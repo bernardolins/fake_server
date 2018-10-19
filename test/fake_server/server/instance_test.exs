@@ -22,9 +22,28 @@ defmodule FakeServer.InstanceTest do
     end
 
     test "returns {:ok, pid} when all validation passes" do
-      assert {:ok, _} = Instance.run()
-      assert {:ok, _} = Instance.run(server_name: :test)
-      assert {:ok, _} = Instance.run(max_conn: 200)
+      assert {:ok, pid1} = Instance.run()
+      assert {:ok, pid2} = Instance.run(server_name: :test)
+      assert {:ok, pid3} = Instance.run(max_conn: 200)
+      GenServer.stop(pid1)
+      GenServer.stop(pid2)
+      GenServer.stop(pid3)
+    end
+  end
+
+  describe "#stop" do
+    test "returns :ok and stops the http server" do
+      {:ok, pid} = Instance.run(port: 55001)
+      assert Instance.run(port: 55001) == {:error, {55001, "port is already in use"}}
+      assert Instance.stop(pid) == :ok
+      assert {:ok, _} = Instance.run(port: 55001)
+    end
+
+    test "can stop the server using the serve name" do
+      {:ok, pid} = Instance.run(port: 55002, server_name: :test)
+      assert Instance.run(port: 55002) == {:error, {55002, "port is already in use"}}
+      assert Instance.stop(:test) == :ok
+      assert {:ok, _} = Instance.run(port: 55002)
     end
   end
 end
