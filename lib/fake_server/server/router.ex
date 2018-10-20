@@ -1,10 +1,10 @@
 defmodule FakeServer.Router do
   alias FakeServer.Route
 
-  def create(route_list) do
+  def create(route_list, access_control) do
     cowboy_routes =
       for %Route{} = route <- route_list, Route.valid?(route) do
-        {Route.path(route), Route.handler(route), [route: route]}
+        {Route.path(route), Route.handler(route), [route: route, access: access_control]}
       end
     {:ok, :cowboy_router.compile([{:_, cowboy_routes}])}
   end

@@ -2,11 +2,10 @@ defmodule FakeServer.Cowboy do
   alias FakeServer.Instance
 
   def start_listen(%Instance{} = server) do
-    :cowboy.start_http(
+    :cowboy.start_clear(
       server.server_name,
-      server.max_conn,
       [port: server.port],
-      [env: [dispatch: server.router]]
+      %{env: %{dispatch: server.router}}
     )
   end
 

@@ -2,7 +2,7 @@ defmodule FakeServer.RouteTest do
   use ExUnit.Case
 
   alias FakeServer.Route
-  alias FakeServer.HTTP.Response
+  alias FakeServer.Response
 
   describe "#create" do
     test "returns {:error, reason} if path is not a string" do
