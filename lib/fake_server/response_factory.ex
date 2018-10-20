@@ -9,7 +9,7 @@ defmodule FakeServer.ResponseFactory do
   ## What is a factory?
   A factory is just a function with no arguments inside a module that `use FakeServer.ResponseFactory`.
 
-  The function name must end in `_response` and it must return a `FakeServer.HTTP.Response` structure. The factory name is everything before `_response`.
+  The function name must end in `_response` and it must return a `FakeServer.Response` structure. The factory name is everything before `_response`.
 
   ```elixir
   # test/support/my_response_factory.ex
@@ -120,7 +120,7 @@ defmodule FakeServer.ResponseFactory do
 
   defmacro __using__(_) do
     quote do
-      import FakeServer.HTTP.Response
+      import FakeServer.Response
 
       def build(name, header_opts) when is_map(header_opts) do
         response = get_response(name)
