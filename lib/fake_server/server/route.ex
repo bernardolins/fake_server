@@ -2,7 +2,7 @@ defmodule FakeServer.Route do
   defstruct [
     handler: Handler,
     path: "/",
-    response: FakeServer.HTTP.Response.default!(),
+    response: FakeServer.Response.default!(),
   ]
 
   def create(opts \\ []) do
@@ -54,7 +54,7 @@ defmodule FakeServer.Route do
     cond do
       is_function(response)                               -> {:ok, %__MODULE__{route | handler: FakeServer.Handlers.FunctionHandler}}
       is_list(response)                                   -> {:ok, %__MODULE__{route | handler: Handler}}
-      FakeServer.HTTP.Response.validate(response) == :ok  -> {:ok, %__MODULE__{route | handler: FakeServer.Handlers.ResponseHandler}}
+      FakeServer.Response.validate(response) == :ok  -> {:ok, %__MODULE__{route | handler: FakeServer.Handlers.ResponseHandler}}
       true -> {:error, {response, "response must be a function, a Response struct, or a list of Response structs"}}
     end
   end
@@ -71,6 +71,6 @@ defmodule FakeServer.Route do
     end
   end
 
-  defp valid_response?(%FakeServer.HTTP.Response{} = response), do: FakeServer.HTTP.Response.validate(response)
+  defp valid_response?(%FakeServer.Response{} = response), do: FakeServer.Response.validate(response)
   defp valid_response?(response), do: {:error, {response, "response must be a function, a Response struct, or a list of Response structs"}}
 end
