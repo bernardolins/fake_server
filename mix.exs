@@ -19,7 +19,7 @@ defmodule FakeServer.Mixfile do
 
   defp deps do
     [
-      {:cowboy, "~> 1.1"},
+      {:cowboy, "~> 2.5"},
       {:poison, ">= 1.0.0"},
       {:mock, "~> 0.3", only: :test},
       {:faker, "~> 0.9", only: :test},
