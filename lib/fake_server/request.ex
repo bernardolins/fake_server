@@ -25,58 +25,54 @@ defmodule FakeServer.Request do
   @doc false
   def from_cowboy_req(cowboy_req) do
     %__MODULE__{
-      method: method(cowboy_req),
       body: body(cowboy_req),
+      cookies: cookies(cowboy_req),
       headers: headers(cowboy_req),
+      method: method(cowboy_req),
       path: path(cowboy_req),
       query_string: query_string(cowboy_req),
-      query: query(cowboy_req)
     }
   end
 
-  defp method(cowboy_req) do
-    cowboy_req
-    |> :cowboy_req.method
-    |> elem(0)
-  end
-
   defp body(cowboy_req) do
-    cowboy_req
-    |> :cowboy_req.body
-    |> elem(1)
+    if :cowboy_req.has_body(cowboy_req) do
+      read_body(cowboy_req)
+      |> try_decode_body(cowboy_req)
+    end
   end
 
-  defp headers(cowboy_req) do
-    cowboy_req
-    |> :cowboy_req.headers
-    |> elem(0)
-    |> Enum.into(%{})
+  defp read_body(req, body \\ "") do
+    case :cowboy_req.read_body(req) do
+      {:ok, data, _} -> body <> data
+      {:more, data, req2} -> read_body(req2, body <> data)
+    end
   end
 
-  defp path(cowboy_req) do
-    cowboy_req
-    |> :cowboy_req.path
-    |> elem(0)
+  defp cookies(cowboy_req), do: Enum.into(:cowboy_req.parse_cookies(cowboy_req), %{})
+  defp headers(cowboy_req), do: :cowboy_req.headers(cowboy_req)
+  defp method(cowboy_req), do: :cowboy_req.method(cowboy_req)
+  defp path(cowboy_req), do: :cowboy_req.path(cowboy_req)
+  defp query_string(cowboy_req), do: Enum.into(:cowboy_req.parse_qs(cowboy_req), %{})
+
+  defp try_decode_body(body, cowboy_req) do
+    if content_type_json?(cowboy_req) do
+      decode(body)
+    else
+      body
+    end
   end
 
-  defp query_string(cowboy_req) do
-    cowboy_req
-    |> :cowboy_req.qs
-    |> elem(0)
+  defp content_type_json?(cowboy_req) do
+    case headers(cowboy_req) do
+      %{"content-type" => content_type} -> content_type =~ "application/json"
+      _ -> false
+    end
   end
 
-  defp query(cowboy_req) do
-    qs = query_string(cowboy_req)
-
-    qs
-    |> String.split("&")
-    |> create_query_map
-  end
-
-  defp create_query_map([""]), do: %{}
-  defp create_query_map(query_list) do
-    query_list
-    |> Enum.map(fn(query) -> List.to_tuple(String.split(query, "=")) end)
-    |> Enum.into(%{})
+  defp decode(body) do
+    case Poison.decode(body) do
+      {:ok, map} -> map
+      _ -> body
+    end
   end
 end
