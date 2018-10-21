@@ -81,7 +81,8 @@ defmodule FakeServer.RouteTest do
     end
 
     test "returns a Route struct if all validation passes and response is a list of Response structs" do
-      assert %Route{} = Route.create!(response: [Response.ok!, Response.not_found!])
+      assert %Route{response: response} = Route.create!(response: [Response.ok!, Response.not_found!])
+      assert is_pid(response)
     end
 
     test "returns a Route struct if all validation passes and response is a Response struct" do
@@ -99,8 +100,8 @@ defmodule FakeServer.RouteTest do
   describe "#handler" do
     test "returns the route handler" do
       assert FakeServer.Handlers.FunctionHandler == Route.handler(Route.create!(response: fn(_) -> :ok end))
-      assert Handler == Route.handler(Route.create!(response: []))
-      assert Handler == Route.handler(Route.create!(response: [Response.ok!, Response.not_found!]))
+      assert FakeServer.Handlers.ListHandler == Route.handler(Route.create!(response: []))
+      assert FakeServer.Handlers.ListHandler == Route.handler(Route.create!(response: [Response.ok!, Response.not_found!]))
       assert FakeServer.Handlers.ResponseHandler == Route.handler(Route.create!(response: Response.ok!))
     end
   end

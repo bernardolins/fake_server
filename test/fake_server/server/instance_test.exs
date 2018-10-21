@@ -40,7 +40,7 @@ defmodule FakeServer.InstanceTest do
     end
 
     test "can stop the server using the serve name" do
-      {:ok, pid} = Instance.run(port: 55002, server_name: :test)
+      {:ok, _} = Instance.run(port: 55002, server_name: :test)
       assert Instance.run(port: 55002) == {:error, {55002, "port is already in use"}}
       assert Instance.stop(:test) == :ok
       assert {:ok, _} = Instance.run(port: 55002)
