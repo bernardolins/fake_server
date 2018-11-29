@@ -125,13 +125,13 @@ defmodule FakeServer.ResponseFactory do
       def build(name, header_opts) when is_map(header_opts) do
         response = get_response(name)
         headers = override_headers(response.headers, header_opts)
-        new(response.code, response.body, headers)
+        new!(response.code, response.body, headers)
       end
       def build(name, body_opts \\ [], header_opts \\ %{}) when is_list(body_opts) do
         response = get_response(name)
         body = override_body_keys(response.body, body_opts)
         headers = override_headers(response.headers, header_opts)
-        new(response.code, body, headers)
+        new!(response.code, body, headers)
       end
 
       def build_list(list_size, name) when is_integer(list_size) do
@@ -148,16 +148,19 @@ defmodule FakeServer.ResponseFactory do
       end
 
       defp override_body_keys(original_body, keys) do
-        keys
-        |> Enum.reduce(original_body, fn({key, value}, body) ->
-          override_body_key(body, key, value)
-        end)
+        case Poison.decode(original_body) do
+          {:ok, decoded_body} ->
+            Enum.reduce(keys, decoded_body, fn({key, value}, body) ->
+              key = if is_atom(key), do: to_string(key), else: key
+              override_body_key(body, key, value)
+            end)
+          {:error, _} -> nil
+        end
       end
 
       defp override_body_key(body, key, value) when is_nil(value), do: Map.delete(body, key)
       defp override_body_key(body, key, value) do
-        if Map.has_key?(body, key), do: Map.put(body, key, value),
-        else: body
+        if Map.has_key?(body, key), do: Map.put(body, key, value), else: body
       end
 
       defp override_headers(original_headers, new_headers) do
@@ -173,3 +176,4 @@ defmodule FakeServer.ResponseFactory do
     end
   end
 end
+

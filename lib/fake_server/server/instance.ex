@@ -88,7 +88,7 @@ defmodule FakeServer.Instance do
         :cowboy.set_env(server.server_name, :dispatch, router)
         {:ok, %__MODULE__{server | routes: routes, router: router}}
     else
-      error -> {:reply, error, server}
+      error -> error
     end
   end
 end

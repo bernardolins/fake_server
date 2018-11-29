@@ -35,7 +35,7 @@ defmodule FakeServer do
   defmodule SomeTest do
     use ExUnit.Case, async: true
     import FakeServer
-    alias FakeServer.HTTP.Response
+    alias FakeServer.Response
 
     test_with_server "each test runs its own http server" do
       IO.inspect FakeServer.env
@@ -70,17 +70,15 @@ defmodule FakeServer do
   defmacro test_with_server(test_description, opts \\ [], do: test_block) do
     quote do
       test unquote(test_description) do
-        map_opts = Enum.into(unquote(opts), %{})
-        {:ok, server_id, port} = Server.run(map_opts)
-        env = FakeServer.Env.new(port)
+        case FakeServer.Instance.run(unquote(opts)) do
+          {:ok, server} ->
+            var!(current_server, FakeServer) = server
+            unquote(test_block)
+            FakeServer.Instance.stop(server)
 
-        EnvAgent.save_env(server_id, env)
-
-        var!(current_id, FakeServer) = server_id
-        unquote(test_block)
-
-        Server.stop(server_id)
-        EnvAgent.delete_env(server_id)
+          {:error, reason} ->
+            raise FakeServer.Error, reason
+        end
       end
     end
   end
@@ -104,7 +102,7 @@ defmodule FakeServer do
   ```
 
   ## Adding routes
-  When you add a route, you have to say what will be answered by it when it receives a request. For each request, the server will use the appropriate `FakeServer.HTTP.Response` based on the way the route was configured.
+  When you add a route, you have to say what will be answered by it when it receives a request. For each request, the server will use the appropriate `FakeServer.Response` based on the way the route was configured.
 
   ### Routes with a single response
   When the test expects the route to receive only one request, it is appropriate to configure this route with a single response.
@@ -121,7 +119,7 @@ defmodule FakeServer do
 
   ### Routes with lists
 
-  When the route is configured with a list of `FakeServer.HTTP.Response`s, the server will respond with the first element in the list and then remove it. This will be repeated for each request made for this route. If the list is empty, the server will respond with its `default_response`.
+  When the route is configured with a list of `FakeServer.Response`s, the server will respond with the first element in the list and then remove it. This will be repeated for each request made for this route. If the list is empty, the server will respond with its `default_response`.
 
   ```
   test_with_server "the server will always reply the first element and then remove it" do
@@ -161,7 +159,7 @@ defmodule FakeServer do
 
   Configure a route with a function is useful when you need to simulate timeouts, validate the presence of headers or some mandatory parameters.
 
-  The function will be called every time a request arrives at that route. If the return value of the function is a `FakeServer.HTTP.Response`, this response will be replied. However, if the return is not a `FakeServer.HTTP.Response`, the server `default_response` is returned.
+  The function will be called every time a request arrives at that route. If the return value of the function is a `FakeServer.Response`, this response will be replied. However, if the return is not a `FakeServer.Response`, the server `default_response` is returned.
 
   ```elixir
   test_with_server "the server will return the default_response if the function return is not a Response struct", [default_response: Response.not_found("Ops!")] do
@@ -196,9 +194,9 @@ defmodule FakeServer do
   ```
 
   ### Responses
-  The server will always use a struct to set the response. You can define the headers and body of this struct using `FakeServer.HTTP.Response` helpers like `FakeServer.HTTP.Response.ok/2` or `FakeServer.HTTP.Response.not_found/2`. There are helpers like these for most of the HTTP status codes.
+  The server will always use a struct to set the response. You can define the headers and body of this struct using `FakeServer.Response` helpers like `FakeServer.Response.ok/2` or `FakeServer.Response.not_found/2`. There are helpers like these for most of the HTTP status codes.
 
-  You can also use `FakeServer.HTTP.Response.new/3` or even create the struct yourself. For more details see `FakeServer.HTTP.Response` docs.
+  You can also use `FakeServer.Response.new/3` or even create the struct yourself. For more details see `FakeServer.Response` docs.
 
   ```elixir
   test_with_server "adding body and headers to the response" do
@@ -209,45 +207,12 @@ defmodule FakeServer do
   end
   ```
   """
-
-  # DEPRECATED: Keep Backward compatibility
-  defmacro route(path, response_block \\ nil)
-  defmacro route(path, do: response_block) do
-    quote do
-      current_id = var!(current_id, FakeServer)
-      env = EnvAgent.get_env(current_id)
-      EnvAgent.save_env(current_id, %FakeServer.Env{env | routes: [unquote(path)|env.routes]})
-      Server.add_response(current_id, unquote(path), unquote(response_block))
-    end
-  end
-
   defmacro route(path, response_block) do
     quote do
-      current_id = var!(current_id, FakeServer)
-      env = EnvAgent.get_env(current_id)
-      EnvAgent.save_env(current_id, %FakeServer.Env{env | routes: [unquote(path)|env.routes]})
-      Server.add_response(current_id, unquote(path), unquote(response_block))
-    end
-  end
-
-  @doc """
-  Returns the current server environment.
-
-  You can only call `FakeServer.env/0` inside `test_with_server/3`.
-
-  ## Usage
-  ```elixir
-    test_with_server "Getting the server env", [port: 5001] do
-      assert FakeServer.env.ip == "127.0.0.1"
-      assert FakeServer.env.port == 5001
-    end
-  ```
-  """
-  defmacro env do
-    quote do
-      case var!(current_id, FakeServer) do
-        nil -> raise "You can call this macro inside test_with_server only"
-        current_id -> EnvAgent.get_env(current_id)
+      server = var!(current_server, FakeServer)
+      case FakeServer.Instance.add_route(server, unquote(path), unquote(response_block)) do
+        :ok -> :ok
+        {:error, reason} -> raise FakeServer.Error, reason
       end
     end
   end
@@ -259,19 +224,15 @@ defmodule FakeServer do
 
   ## Usage
   ```elixir
-    test_with_server "Getting the server address", [port: 5001] do
-      assert FakeServer.address == "127.0.0.1:5001"
+    test_with_server "Getting the server address", [port: 55001] do
+      assert FakeServer.address == "127.0.0.1:55001"
     end
   ```
   """
   defmacro address do
     quote do
-      case var!(current_id, FakeServer) do
-        nil -> raise "You can only call FakeServer.address inside test_with_server"
-        current_id ->
-          env = EnvAgent.get_env(current_id)
-          "#{env.ip}:#{env.port}"
-      end
+      server = var!(current_server, FakeServer)
+      "127.0.0.1:#{FakeServer.Instance.port(server)}"
     end
   end
 
@@ -282,19 +243,15 @@ defmodule FakeServer do
 
   ## Usage
   ```elixir
-    test_with_server "Getting the server address", [port: 5001] do
-      assert FakeServer.address == "http://127.0.0.1:5001"
+    test_with_server "Getting the server address", [port: 55001] do
+      assert FakeServer.address == "http://127.0.0.1:55001"
     end
   ```
   """
   defmacro http_address do
     quote do
-      case var!(current_id, FakeServer) do
-        nil -> raise "You can only call FakeServer.address inside test_with_server"
-        current_id ->
-          env = EnvAgent.get_env(current_id)
-          "http://#{env.ip}:#{env.port}"
-      end
+      server = var!(current_server, FakeServer)
+      "http://127.0.0.1:#{FakeServer.Instance.port(server)}"
     end
   end
 
@@ -317,10 +274,10 @@ defmodule FakeServer do
   """
   defmacro hits do
     quote do
-      case var!(current_id, FakeServer) do
-        nil -> raise "You can only call FakeServer.hits inside test_with_server"
-        current_id ->
-          EnvAgent.get_env(current_id).hits
+      server = var!(current_server, FakeServer)
+      case FakeServer.Instance.access_list(server) do
+        {:ok, access_list} -> length(access_list)
+        {:error, reason} -> raise FakeServer.Error, reason
       end
     end
   end
@@ -333,8 +290,8 @@ defmodule FakeServer do
   ## Usage
   ```elixir
   test_with_server "count route hits" do
-    route "/no/cache", FakeServer.HTTP.Response.ok
-    route "/cache", FakeServer.HTTP.Response.ok
+    route "/no/cache", FakeServer.Response.ok
+    route "/cache", FakeServer.Response.ok
     assert (FakeServer.hits "/no/cache") == 0
     assert (FakeServer.hits "/cache") == 0
     HTTPoison.get! FakeServer.address <> "/no/cache"
@@ -347,9 +304,15 @@ defmodule FakeServer do
   """
   defmacro hits(path) do
     quote do
-      current_id = var!(current_id, FakeServer)
-      env = EnvAgent.get_env(current_id)
-      Server.path_hits(current_id, unquote(path) )
+      server = var!(current_server, FakeServer)
+      case FakeServer.Instance.access_list(server) do
+        {:ok, access_list} ->
+          access_list_path =
+            access_list
+            |> Enum.filter(&(&1 == unquote(path)))
+          length(access_list_path)
+        {:error, reason} -> raise FakeServer.Error, reason
+      end
     end
   end
 end
