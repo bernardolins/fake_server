@@ -2,43 +2,18 @@ defmodule FakeServer.FakeServerIntegrationTest do
   use ExUnit.Case, async: false
 
   import FakeServer
-  import FakeServer.Integration.FakeControllers
+  alias FakeServer.Response
+  alias FakeServer.Route
 
-  alias FakeServer.HTTP.Response
-
-  setup_all do
-    # This should be be done at test/test_helper.exs
-    Application.ensure_all_started(:fake_server)
-    Application.ensure_all_started(:httpoison)
-    on_exit fn ->
-      Application.stop(:fake_server)
-    end
+  test_with_server "with port configured, server will listen on the port provided", [port: 55001] do
+    route "/", Response.ok!
+    assert FakeServer.address == "127.0.0.1:55001"
+    response = HTTPoison.get! FakeServer.address <> "/"
+    assert response.status_code == 200
   end
 
-  test_with_server "with port configured, server will listen on the port provided", [port: 5001] do
-    assert FakeServer.address == "127.0.0.1:5001"
-  end
-
-  test_with_server "with port configured, will setup a server env", [port: 5001] do
-    env = FakeServer.env
-    assert env.ip == "127.0.0.1"
-    assert env.port == 5001
-  end
-
-  test_with_server "stores the routes in test env" do
-    assert FakeServer.env.routes == []
-    route "/", []
-    assert FakeServer.env.routes == ["/"]
-
-    route "/route1", Response.bad_request
-    assert FakeServer.env.routes == ["/route1", "/"]
-
-    route "/route2", use_controller :query_string
-    assert FakeServer.env.routes == ["/route2", "/route1", "/"]
-  end
-
-  test_with_server "save server hits in the environment" do
-    route "/", Response.ok
+  test_with_server "save server hits" do
+    route "/", Response.ok!
     assert FakeServer.hits == 0
     HTTPoison.get! FakeServer.address <> "/"
     assert FakeServer.hits == 1
@@ -46,9 +21,9 @@ defmodule FakeServer.FakeServerIntegrationTest do
     assert FakeServer.hits == 2
   end
 
-  test_with_server "save route hits in the environment" do
-    route "/no/cache", FakeServer.HTTP.Response.ok
-    route "/cache", FakeServer.HTTP.Response.ok
+  test_with_server "save route hits" do
+    route "/no/cache", FakeServer.Response.ok!
+    route "/cache", FakeServer.Response.ok!
     assert (FakeServer.hits "/no/cache") == 0
     assert (FakeServer.hits "/cache") == 0
     HTTPoison.get! FakeServer.address <> "/no/cache"
@@ -58,35 +33,23 @@ defmodule FakeServer.FakeServerIntegrationTest do
     assert FakeServer.hits == 2
   end
 
-  test_with_server "default response can be configured and will be replied response list is empty", [port: 5001, default_response: Response.bad_request] do
-    route "/", []
-    assert FakeServer.hits == 0
+  test_with_server "accepts routes on the configuration", routes: [Route.create!(path: "/", response: Response.forbidden!)] do
     response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 400
-    assert FakeServer.hits == 1
-  end
-
-  test_with_server "default response can be configured and will be replied with a single response", [default_response: Response.forbidden] do
-    route "/test", Response.bad_request
-
-    response = HTTPoison.get! FakeServer.address <> "/test"
-    assert response.status_code == 400
-
-    response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 403
   end
 
-  test_with_server "default response will be replied if server is configured with an empty list", [default_response: Response.forbidden] do
+  test_with_server "default response will be replied if server is configured with an empty list" do
     route "/test", []
 
     response = HTTPoison.get! FakeServer.address <> "/test"
-    assert response.status_code == 403
-
+    assert response.status_code == 200
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
     response = HTTPoison.get! FakeServer.address <> "/test"
-    assert response.status_code == 403
+    assert response.status_code == 200
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
-  test_with_server "with any routes configured will always reply 404" do
+  test_with_server "without any routes configured will always reply 404" do
     response = HTTPoison.get! FakeServer.address <> "/"
     assert response.status_code == 404
     response = HTTPoison.get! FakeServer.address <> "/test"
@@ -96,24 +59,21 @@ defmodule FakeServer.FakeServerIntegrationTest do
   end
 
   test_with_server "reply the first element of the list and remove it" do
-    route "/test", [Response.ok, Response.not_found, Response.bad_request]
+    route "/test", [Response.ok!, Response.not_found!, Response.bad_request!]
 
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 200
-
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 404
-
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 400
-
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 200
     assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
   test_with_server "always reply the default_response when the list empties" do
-    route "/test", [Response.bad_request]
+    route "/test", [Response.bad_request!]
 
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 400
@@ -127,75 +87,42 @@ defmodule FakeServer.FakeServerIntegrationTest do
     assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
-  test_with_server "returns default_response if no response is configured to the given route" do
-    route "/"
-
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 200
-    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
-  end
-
-  test_with_server "accepts a single element instead of a list" do
-    route "/test", Response.bad_request
+  test_with_server "always reply the same response when it is a single element" do
+    route "/test", Response.bad_request! "test"
 
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 400
-
+    assert response.body == "test"
     response = HTTPoison.get! FakeServer.address <> "/test"
-    assert response.status_code == 200
-    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
+    assert response.status_code == 400
+    assert response.body == "test"
   end
 
   test_with_server "reply the expected response on cofigured route and 404 on not configured routes" do
-    route "/", [Response.bad_request]
+    route "/", [Response.bad_request!]
+
     response = HTTPoison.get! FakeServer.address <> "/"
     assert response.status_code == 400
-
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 404
-
     response = HTTPoison.get! FakeServer.address <> "/test/1"
     assert response.status_code == 404
   end
 
   test_with_server "reply the expected response on cofigured route and 404 on not configured routes with a single element" do
-    route "/", Response.bad_request
+    route "/", Response.bad_request!
+
     response = HTTPoison.get! FakeServer.address <> "/"
     assert response.status_code == 400
-
     response = HTTPoison.get! FakeServer.address <> "/test"
     assert response.status_code == 404
-
     response = HTTPoison.get! FakeServer.address <> "/test/1"
     assert response.status_code == 404
   end
 
-  test_with_server "with a simple controller always reply 200" do
-    route "/dog", use_controller :single_response
-
-    response = HTTPoison.get! FakeServer.address <> "/dog"
-    assert response.status_code == 200
-    assert response.body == ~s<{"pet_name": "Rufus", "kind": "dog"}>
-  end
-
-  test_with_server "evaluates FakeController and reply accordingly" do
-    route "/", use_controller :query_string
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 401
-
-    response = HTTPoison.get! FakeServer.address <> "/?token=1234"
-    assert response.status_code == 200
-  end
-
-  test_with_server "accepts controllers, response lists and single responses on different routes" do
-    route "/controller", use_controller :query_string
-    route "/list", [Response.ok, Response.not_found, Response.bad_request]
-    route "/response", Response.bad_request
-
-    response = HTTPoison.get! FakeServer.address <> "/controller"
-    assert response.status_code == 401
-    response = HTTPoison.get! FakeServer.address <> "/controller?token=1234"
-    assert response.status_code == 200
+  test_with_server "accepts response lists and single responses on different routes" do
+    route "/list", [Response.ok!, Response.not_found!, Response.bad_request!]
+    route "/response", Response.bad_request!
 
     response = HTTPoison.get! FakeServer.address <> "/list"
     assert response.status_code == 200
@@ -210,49 +137,48 @@ defmodule FakeServer.FakeServerIntegrationTest do
     response = HTTPoison.get! FakeServer.address <> "/response"
     assert response.status_code == 400
     response = HTTPoison.get! FakeServer.address <> "/response"
-    assert response.status_code == 200
-    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
-  end
-
-  test_with_server "works with response headers as a keyword list" do
-    route "/", Response.ok(~s<{"response": "ok"}>, [{'Content-Type', 'application/json'}])
-
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/json"} end)
-  end
-
-  test_with_server "works with response headers as map" do
-    route "/", Response.ok(~s<{"response": "ok"}>, %{'Content-Type' => 'application/json'})
-
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/json"} end)
+    assert response.status_code == 400
   end
 
   test_with_server "works with response headers as map with string keys" do
-    route "/", Response.ok(~s<{"response": "ok"}>, %{"Content-Type" => "application/json"})
+    route "/", Response.ok!(~s<{"response": "ok"}>, %{"Content-Type" => "application/json"})
 
     response = HTTPoison.get! FakeServer.address <> "/"
     assert Enum.any?(response.headers, fn(header) -> header == {"Content-Type", "application/json"} end)
   end
 
   test_with_server "works when the response is created with a map as response body" do
-    route "/", Response.ok(%{response: "ok"})
+    route "/", Response.ok!(%{response: "ok"})
 
     response = HTTPoison.get! FakeServer.address <> "/"
     assert response.body == ~s<{"response":"ok"}>
   end
 
   test_with_server "works when the response is created with a string as response body" do
-    route "/", Response.ok(~s<{"response":"ok"}>)
+    route "/", Response.ok!(~s<{"response":"ok"}>)
 
     response = HTTPoison.get! FakeServer.address <> "/"
     assert response.body == ~s<{"response":"ok"}>
   end
 
-  # see test/integration/support/response_factory.ex
+  test_with_server "raise FakeServer.Error when response is invalid on a route" do
+    assert_raise FakeServer.Error, fn -> route "/", Response.new!(600) end
+    assert_raise FakeServer.Error, fn -> route "/", Response.ok!(1) end
+    assert_raise FakeServer.Error, fn -> route "/", Response.ok!("", []) end
+  end
+
+  test_with_server "raise FakeServer.Error when path is invalid" do
+    assert_raise FakeServer.Error, fn -> route "abc", Response.ok!() end
+    assert_raise FakeServer.Error, fn -> route '/abc', Response.ok!() end
+    assert_raise FakeServer.Error, fn -> route :abc, Response.ok!() end
+    assert_raise FakeServer.Error, fn -> route 123, Response.ok!() end
+    assert_raise FakeServer.Error, fn -> route [], Response.ok!() end
+  end
+
   describe "when using ResponseFactory" do
     test_with_server "generates a response wiht custom data" do
-      customized_response = %{body: person} = FakeResponseFactory.build(:person)
+      customized_response = %{body: body} = FakeResponseFactory.build(:person)
+      person = Poison.decode!(body, keys: :atoms)
 
       route "/person", customized_response
 
@@ -267,7 +193,8 @@ defmodule FakeServer.FakeServerIntegrationTest do
     end
 
     test_with_server "can build multiple custom response types" do
-      customized_response = %{body: person} = FakeResponseFactory.build(:person)
+      customized_response = %{body: body} = FakeResponseFactory.build(:person)
+      person = Poison.decode!(body, keys: :atoms)
 
       route "/person", customized_response
       route "/not_found", FakeResponseFactory.build(:customized_404)
@@ -399,45 +326,37 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
       Enum.each(person_list, fn(person) ->
         response = HTTPoison.get! FakeServer.address <> "/person"
+        person = Poison.decode!(person.body, keys: :atoms)
         body = Poison.decode!(response.body)
 
         assert response.status_code == 200
-        assert person.body[:name] == body["name"]
-        assert person.body[:email] == body["email"]
-        assert person.body[:company][:name] == body["company"]["name"]
-        assert person.body[:company][:country] == body["company"]["country"]
+        assert person[:name] == body["name"]
+        assert person[:email] == body["email"]
+        assert person[:company][:name] == body["company"]["name"]
+        assert person[:company][:country] == body["company"]["country"]
       end)
     end
   end
 
   describe "when using functions" do
     test_with_server "reply with the function return if it's a valid Response struct" do
-      route "/", fn(_) -> Response.ok end
+      route "/", fn(_) -> Response.ok! end
 
       response = HTTPoison.get! FakeServer.address <> "/"
       assert response.status_code == 200
     end
 
-    test_with_server "reply with the function return if it's a valid Response struct list" do
-      route "/", fn(_) -> [Response.ok, Response.not_found] end
+    #test_with_server "reply with the function return if it's a valid Response struct from a factory" do
+    #  route "/", fn(_) -> FakeResponseFactory.build(:person) end
 
-      response = HTTPoison.get! FakeServer.address <> "/"
-      assert response.status_code == 200
-      response = HTTPoison.get! FakeServer.address <> "/"
-      assert response.status_code == 404
-    end
+    #  response1 = HTTPoison.get! FakeServer.address <> "/"
+    #  assert response1.status_code == 200
+    #  response2 = HTTPoison.get! FakeServer.address <> "/"
+    #  assert response2.status_code == 200
+    #  assert response1 != response2
+    #end
 
-    test_with_server "reply with the function return if it's a valid Response struct from a factory" do
-      route "/", fn(_) -> FakeResponseFactory.build(:person) end
-
-      response1 = HTTPoison.get! FakeServer.address <> "/"
-      assert response1.status_code == 200
-      response2 = HTTPoison.get! FakeServer.address <> "/"
-      assert response2.status_code == 200
-      assert response1 != response2
-    end
-
-    test_with_server "returns default_response if the function return is not a Response struct, a list of responses or a controller" do
+    test_with_server "returns default_response if the function return is not a Response struct or list of responses" do
       route "/", fn(_) -> :ok end
 
       response = HTTPoison.get! FakeServer.address <> "/"
@@ -447,10 +366,10 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
     test_with_server "accepts the request object as argument" do
       route "/", fn(req) ->
-        if req.query["token"]  == "1234" do
-          Response.ok
+        if req.query_string["token"]  == "1234" do
+          Response.ok!
         else
-          Response.forbidden
+          Response.forbidden!
         end
       end
 
@@ -464,9 +383,9 @@ defmodule FakeServer.FakeServerIntegrationTest do
     test_with_server "can evaluate the request body" do
       route "/", fn(req) ->
         if req.body  == ~s<{"test": true}> do
-          Response.ok %{test: true}
+          Response.ok! %{test: true}
         else
-          Response.ok %{test: false}
+          Response.ok! %{test: false}
         end
       end
 
@@ -479,17 +398,36 @@ defmodule FakeServer.FakeServerIntegrationTest do
       response = HTTPoison.post! address, ~s<{}>
       assert response.body == ~s<{"test":false}>
     end
+
+    test_with_server "turn the body into map if the request content-type is application/json" do
+      route "/", fn(req) ->
+        if req.body  == %{"test" => true} do
+          Response.ok! %{test: true}
+        else
+          Response.ok! %{test: false}
+        end
+      end
+
+      address = FakeServer.address <> "/"
+
+      response = HTTPoison.post! address, ~s<{"test": true}>, %{"content-type" => "application/json"}
+      assert response.status_code == 200
+      assert response.body == ~s<{"test":true}>
+
+      response = HTTPoison.post! address, ~s<{"test": true}>
+      assert response.body == ~s<{"test":false}>
+    end
   end
 
   test_with_server "can handle all 2xx status codes" do
     response_list = [
-      Response.ok,
-      Response.created,
-      Response.accepted,
-      Response.non_authoritative_information,
-      Response.no_content,
-      Response.reset_content,
-      Response.partial_content
+      Response.ok!,
+      Response.created!,
+      Response.accepted!,
+      Response.non_authoritative_information!,
+      Response.no_content!,
+      Response.reset_content!,
+      Response.partial_content!
     ]
 
     route "/", response_list
@@ -518,4 +456,3 @@ defmodule FakeServer.FakeServerIntegrationTest do
     end)
   end
 end
-

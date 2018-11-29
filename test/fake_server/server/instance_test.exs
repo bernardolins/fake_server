@@ -21,12 +21,6 @@ defmodule FakeServer.InstanceTest do
       assert {:error, {10.3, "max_conn must be a positive integer"}} == Instance.run(max_conn: 10.3)
     end
 
-    test "returns {:error, reason} when random port could not be get" do
-    end
-
-    test "returns {:error, reason} when access server could not be started"
-    test "returns {:error, reason} when cowboy server could not be started"
-
     test "returns {:ok, pid} when all validation passes" do
       assert {:ok, pid1} = Instance.run()
       assert {:ok, pid2} = Instance.run(server_name: :test)
