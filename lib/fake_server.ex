@@ -256,6 +256,25 @@ defmodule FakeServer do
   end
 
   @doc """
+  Returns the current server TCP port.
+
+  You can only call `FakeServer.port/0` inside `test_with_server/3`.
+
+  ## Usage
+  ```elixir
+    test_with_server "Getting the server port", [port: 55001] do
+      assert FakeServer.port == 55001
+    end
+  ```
+  """
+  defmacro port do
+    quote do
+      server = var!(current_server, FakeServer)
+      FakeServer.Instance.port(server)
+    end
+  end
+
+  @doc """
   Returns the number of requests made to the server.
 
   You can only call `FakeServer.hits/0` inside `test_with_server/3`.
