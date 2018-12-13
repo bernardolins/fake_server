@@ -7,6 +7,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
   test_with_server "with port configured, server will listen on the port provided", [port: 55001] do
     route "/", Response.ok!
+    assert FakeServer.port == 55001
     assert FakeServer.address == "127.0.0.1:55001"
     response = HTTPoison.get! FakeServer.address <> "/"
     assert response.status_code == 200
