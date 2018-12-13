@@ -27,6 +27,7 @@ defmodule FakeServer.Handlers.FunctionHandler do
   defp execute_response(request, route) do
     case route.response.(request) do
       %Response{} = response -> response
+      {:ok, %Response{} = response} -> response
       _ -> Response.default!()
     end
   end
