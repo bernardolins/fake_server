@@ -30,6 +30,7 @@ defmodule FakeServer.Request do
       headers: headers(cowboy_req),
       method: method(cowboy_req),
       path: path(cowboy_req),
+      query: query(cowboy_req),
       query_string: query_string(cowboy_req),
     }
   end
@@ -52,7 +53,8 @@ defmodule FakeServer.Request do
   defp headers(cowboy_req), do: :cowboy_req.headers(cowboy_req)
   defp method(cowboy_req), do: :cowboy_req.method(cowboy_req)
   defp path(cowboy_req), do: :cowboy_req.path(cowboy_req)
-  defp query_string(cowboy_req), do: Enum.into(:cowboy_req.parse_qs(cowboy_req), %{})
+  defp query(cowboy_req), do: Enum.into(:cowboy_req.parse_qs(cowboy_req), %{})
+  defp query_string(cowboy_req), do: :cowboy_req.qs(cowboy_req)
 
   defp try_decode_body(body, cowboy_req) do
     if content_type_json?(cowboy_req) do
