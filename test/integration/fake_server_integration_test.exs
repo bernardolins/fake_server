@@ -367,7 +367,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
     test_with_server "accepts the request object as argument" do
       route "/", fn(req) ->
-        if req.query_string["token"]  == "1234" do
+        if req.query["token"]  == "1234" do
           Response.ok!
         else
           Response.forbidden!
