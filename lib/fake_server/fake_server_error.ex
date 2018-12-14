@@ -7,12 +7,4 @@ defmodule FakeServer.Error do
     message = "#{inspect param}: #{reason}"
     %__MODULE__{message: message}
   end
-
-  def exception(reason) when is_bitstring(reason) do
-    %__MODULE__{message: reason}
-  end
-
-  def exception(_) do
-    %__MODULE__{}
-  end
 end
