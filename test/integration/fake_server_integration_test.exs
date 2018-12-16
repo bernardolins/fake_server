@@ -347,15 +347,15 @@ defmodule FakeServer.FakeServerIntegrationTest do
       assert response.status_code == 200
     end
 
-    #test_with_server "reply with the function return if it's a valid Response struct from a factory" do
-    #  route "/", fn(_) -> FakeResponseFactory.build(:person) end
+    test_with_server "reply with the function return if it's a valid Response struct from a factory" do
+      route "/", fn(_) -> FakeResponseFactory.build(:person) end
 
-    #  response1 = HTTPoison.get! FakeServer.address <> "/"
-    #  assert response1.status_code == 200
-    #  response2 = HTTPoison.get! FakeServer.address <> "/"
-    #  assert response2.status_code == 200
-    #  assert response1 != response2
-    #end
+      response1 = HTTPoison.get! FakeServer.address <> "/"
+      assert response1.status_code == 200
+      response2 = HTTPoison.get! FakeServer.address <> "/"
+      assert response2.status_code == 200
+      assert response1 != response2
+    end
 
     test_with_server "returns default_response if the function return is not a Response struct or list of responses" do
       route "/", fn(_) -> :ok end

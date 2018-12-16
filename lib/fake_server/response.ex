@@ -44,6 +44,7 @@ defmodule FakeServer.Response do
     end
   end
 
+  def validate({:ok, %__MODULE__{} = response}), do: validate(response)
   def validate(%__MODULE__{body: body, code: code, headers: headers}) do
     cond do
       not is_map(headers) ->                            {:error, {headers, "response headers must be a map"}}
