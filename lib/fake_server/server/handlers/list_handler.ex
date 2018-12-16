@@ -25,7 +25,8 @@ defmodule FakeServer.Handlers.ListHandler do
   defp execute_response(route) do
     case FakeServer.ResponseList.get_next(route.response) do
       %Response{} = response -> response
-      _ -> Response.default()
+      {:ok, %Response{} = response} -> response
+      _ -> Response.default!()
     end
   end
 

@@ -57,7 +57,7 @@ defmodule FakeServer.Route do
     do
       {:ok, %__MODULE__{route | response: list_id}}
     else
-      _ -> {:error, "could not create a response list"}
+      _ -> {:error, {responses, "could not create a response list"}}
     end
   end
   defp when_list_response(%__MODULE__{} = route), do: {:ok, route}
@@ -86,9 +86,12 @@ defmodule FakeServer.Route do
   defp valid_response?(list_id) when is_pid(list_id), do: :ok
 
   defp valid_response?(%FakeServer.Response{} = response), do: FakeServer.Response.validate(response)
+
+  defp valid_response?({:ok, %FakeServer.Response{} = response}), do: FakeServer.Response.validate(response)
+
   defp valid_response?(response), do: {:error, {response, "response must be a function, a Response struct, or a list of Response structs"}}
 
-  defp add_responses_to_list(list_id, []), do: :ok
+  defp add_responses_to_list(_, []), do: :ok
   defp add_responses_to_list(list_id, [response|responses]) do
     case FakeServer.ResponseList.add_response(list_id, response) do
       :ok -> add_responses_to_list(list_id, responses)
