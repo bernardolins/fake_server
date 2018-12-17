@@ -25,7 +25,8 @@ defmodule FakeServer.Handlers.ResponseHandler do
   defp execute_response(req, route) do
     case route.response do
       %Response{} = response -> response
-      _ -> Response.default()
+      {:ok, %Response{} = response} -> response
+      _ -> Response.default!()
     end
   end
 
