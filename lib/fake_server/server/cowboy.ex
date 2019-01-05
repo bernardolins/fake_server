@@ -1,4 +1,6 @@
 defmodule FakeServer.Cowboy do
+  @moduledoc false
+
   alias FakeServer.Instance
 
   def start_listen(%Instance{} = server) do

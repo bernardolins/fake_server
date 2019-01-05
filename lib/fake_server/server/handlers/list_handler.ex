@@ -1,4 +1,6 @@
 defmodule FakeServer.Handlers.ListHandler do
+  @moduledoc false
+
   alias FakeServer.Route
   alias FakeServer.Response
   alias FakeServer.Server.Access

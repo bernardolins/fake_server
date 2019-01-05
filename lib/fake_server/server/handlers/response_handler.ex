@@ -1,4 +1,6 @@
 defmodule FakeServer.Handlers.ResponseHandler do
+  @moduledoc false
+
   alias FakeServer.Route
   alias FakeServer.Response
   alias FakeServer.Server.Access

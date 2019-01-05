@@ -1,4 +1,6 @@
 defmodule FakeServer.Port do
+  @moduledoc false
+
   @default_port_range 55_000..65_000
   @default_port_allocation_attempts 5
 
