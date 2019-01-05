@@ -435,7 +435,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
     Enum.each(response_list, fn(response) ->
       get_response = HTTPoison.get! FakeServer.address <> "/"
-      assert get_response.status_code == response.code
+      assert get_response.status_code == response.status
     end)
   end
 
@@ -444,7 +444,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
     Enum.each(Response.all_4xx, fn(response) ->
       get_response = HTTPoison.get! FakeServer.address <> "/"
-      assert get_response.status_code == response.code
+      assert get_response.status_code == response.status
     end)
   end
 
@@ -453,7 +453,7 @@ defmodule FakeServer.FakeServerIntegrationTest do
 
     Enum.each(Response.all_5xx, fn(response) ->
       get_response = HTTPoison.get! FakeServer.address <> "/"
-      assert get_response.status_code == response.code
+      assert get_response.status_code == response.status
     end)
   end
 end

@@ -45,22 +45,24 @@ defmodule FakeServer.ResponseFactory do
     import FakeServer
 
     test_with_server "basic factory usage" do
-      customized_response = %{body: person} = MyResponseFactory.build(:person)
+      customized_response = %{body: body} = MyResponseFactory.build(:person)
+      person = Poison.decode!(body)
 
-      route "/person", do: customized_response
+      route "/person", customized_response
 
       response = HTTPoison.get! FakeServer.address <> "/person"
       body = Poison.decode!(response.body)
 
       assert response.status_code == 200
-      assert person[:name] == body["name"]
-      assert person[:email] == body["email"]
-      assert person[:company][:name] == body["company"]["name"]
-      assert person[:company][:country] == body["company"]["country"]
+      assert person["name"] == body["name"]
+      assert person["email"] == body["email"]
+      assert person["company"]["name"] == body["company"]["name"]
+      assert person["company"]["country"] == body["company"]["country"]
     end
 
     test_with_server "setting custom attributes" do
       route "/person", do: MyResponseFactory.build(:person, name: "John", email: "john@myawesomemail.com")
+      person = Poison.decode!(body)
 
       response = HTTPoison.get! FakeServer.address <> "/person"
       body = Poison.decode!(response.body)
@@ -121,17 +123,18 @@ defmodule FakeServer.ResponseFactory do
   defmacro __using__(_) do
     quote do
       import FakeServer.Response
+      alias FakeServer.Response
 
       def build(name, header_opts) when is_map(header_opts) do
         response = get_response(name)
         headers = override_headers(response.headers, header_opts)
-        new!(response.code, response.body, headers)
+        new!(response.status, response.body, headers)
       end
       def build(name, body_opts \\ [], header_opts \\ %{}) when is_list(body_opts) do
         response = get_response(name)
         body = override_body_keys(response.body, body_opts)
         headers = override_headers(response.headers, header_opts)
-        new!(response.code, body, headers)
+        new!(response.status, body, headers)
       end
 
       def build_list(list_size, name) when is_integer(list_size) do
@@ -144,7 +147,11 @@ defmodule FakeServer.ResponseFactory do
 
       defp get_response(name) do
         function_name = "#{to_string(name)}_response" |> String.to_atom
-        apply(__MODULE__, function_name, [])
+        case apply(__MODULE__, function_name, []) do
+          {:ok, response = %Response{}} -> response
+          response = %Response{} -> response
+          error -> raise FakeServer.Error, {:error, {error, "response must be a %FakeServer.Response{} structure"}}
+        end
       end
 
       defp override_body_keys(original_body, keys) do

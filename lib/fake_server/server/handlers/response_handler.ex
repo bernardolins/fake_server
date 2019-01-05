@@ -11,7 +11,7 @@ defmodule FakeServer.Handlers.ResponseHandler do
          :ok                      <- Access.compute_access(access, :cowboy_req.path(req)),
          %Response{} = response <- execute_response(req, route)
     do
-      req = :cowboy_req.reply(response.code, response.headers, response.body, req)
+      req = :cowboy_req.reply(response.status, response.headers, response.body, req)
       {:ok, req, state}
     else
       error ->
