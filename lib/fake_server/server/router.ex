@@ -1,4 +1,6 @@
 defmodule FakeServer.Router do
+  @moduledoc false
+
   alias FakeServer.Route
 
   def create(route_list, access_control) do

@@ -1,4 +1,6 @@
 defmodule FakeServer.Route do
+  @moduledoc false
+
   defstruct [
     handler: Handler,
     path: "/",

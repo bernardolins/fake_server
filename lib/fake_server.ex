@@ -14,55 +14,29 @@ defmodule FakeServer do
 
   The server will start just before your test block and will stop just before the test exits. Each `test_with_server/3` has its own server. By default, all servers will start in a random unused port, which allows you to run your tests with `ExUnit.Case async: true` option enabled.
 
-  ## Environment
-  FakeServer defines an environment for each `test_with_server/3`. This environment is stored inside a `FakeServer.Env` structure, which has the following fields:
-
-  - `:ip`: the current server IP
-  - `:port`: the current server port
-  - `:routes`: the list of server routes
-  - `:hits`: the number of requests made to the server
-
-  To access this environment, you can use `FakeServer.env/0`, which returns the environment for the current test. For convenience, you can also use `FakeServer.address/0`, `FakeServer.http_address/0` or `FakeServer.hits/0`.
-
   ## Server options
   You can set some options to the server before it starts using the `opts` params. The following options are accepted:
 
-  `:default_response`: The response that will be given by the server if a route has no responses configured.
-  `:port`: The port that the server will listen.
+  - `:routes`: A list of routes to add to the server. If you set a route here, you don't need to configure a route using `route/2`.
+  - `:port`: The port that the server will listen. The port value must be between 55_000 and 65_000
 
   ## Usage:
   ```elixir
   defmodule SomeTest do
-    use ExUnit.Case, async: true
+    use ExUnit.Case
+
     import FakeServer
+
     alias FakeServer.Response
+    alias FakeServer.Route
 
-    test_with_server "each test runs its own http server" do
-      IO.inspect FakeServer.env
-      # prints something like %FakeServer.Env{hits: 0, ip: "127.0.0.1", port: 5156, routes: []}
+    test_with_server "supports inline port configuration", [port: 63_543] do
+      assert FakeServer.port() == 63_543
     end
 
-    test_with_server "it is possible to configure the server to run on a specific port", [port: 5001] do
-      assert FakeServer.env.port == 5001
-      assert FakeServer.address == "127.0.0.1:5001"
-    end
-
-    test_with_server "it is possible to count how many requests the server received" do
-      route "/", fn(_) -> Response.ok end
-      assert FakeServer.hits == 0
-
-      HTTPoison.get! FakeServer.address <> "/"
-      assert FakeServer.hits == 1
-
-      HTTPoison.get! FakeServer.address <> "/"
-      assert FakeServer.hits == 2
-    end
-
-    test_with_server "adding body and headers to the response" do
-      route "/", do: Response.ok(~s<{"response": "ok"}>, [{'x-my-header', 'fake-server'}])
-
-      response = HTTPoison.get! FakeServer.address <> "/"
-      assert Enum.any?(response.headers, fn(header) -> header == {"x-my-header", "fake-server"} end)
+    test_with_server "supports inline route configuration", [routes: [Route.create!(path: "/test", response: Response.accepted!())]] do
+      response = HTTPoison.get!(FakeServer.address <> "/test")
+      assert response.status_code == 202
     end
   end
   ```
@@ -84,44 +58,87 @@ defmodule FakeServer do
   end
 
   @doc """
-  Adds a route to a server and the response that will be given when a request reaches that route.
+  Adds a route to a server and sets its response.
 
+  If you run a `test_with_server/3` with no route configured, the server will always reply `404`.
 
-  When the macro route is used, you are telling the server what to respond when a request is made for this route. If you run a `test_with_server/3` with no route configured, the server will always reply `404`.
+  ## Route path
+
+  The route path must be a string starting with "/". Route binding and optional segments are accepted:
 
   ```elixir
-  test_with_server "if you do not add any route, the server will reply 404 to all requests" do
-    response = HTTPoison.get! FakeServer.address <> "/"
+  test_with_server "supports route binding" do
+    route "/test/:param", fn(%Request{path: path}) ->
+      if path == "/test/hello", do: Response.ok!(), else: Response.not_found!()
+    end
+
+    response = HTTPoison.get!(FakeServer.address <> "/test/hello")
+    assert response.status_code == 200
+    response = HTTPoison.get!(FakeServer.address <> "/test/world")
     assert response.status_code == 404
-    response = HTTPoison.get! FakeServer.address <> "/test"
-    assert response.status_code == 404
-    response = HTTPoison.get! FakeServer.address <> "/test/1"
-    assert response.status_code == 404
-    assert FakeServer.env.hits == 0
+  end
+
+  test_with_server "supports optional segments" do
+    route "/test[/not[/mandatory]]", Response.accepted!()
+
+    response = HTTPoison.get!(FakeServer.address <> "/test")
+    assert response.status_code == 202
+    response = HTTPoison.get!(FakeServer.address <> "/test/not")
+    assert response.status_code == 202
+    response = HTTPoison.get!(FakeServer.address <> "/test/not/mandatory")
+    assert response.status_code == 202
+  end
+
+  test_with_server "supports fully optional segments" do
+    route "/test/[...]", Response.accepted!()
+
+    response = HTTPoison.get!(FakeServer.address <> "/test")
+    assert response.status_code == 202
+    response = HTTPoison.get!(FakeServer.address <> "/test/not")
+    assert response.status_code == 202
+    response = HTTPoison.get!(FakeServer.address <> "/test/not/mandatory")
+    assert response.status_code == 202
+  end
+
+  test_with_server "paths ending in slash are no different than those ending without slash" do
+    route "/test", Response.accepted!()
+
+    response = HTTPoison.get!(FakeServer.address <> "/test")
+    assert response.status_code == 202
+    response = HTTPoison.get!(FakeServer.address <> "/test/")
+    assert response.status_code == 202
   end
   ```
 
   ## Adding routes
-  When you add a route, you have to say what will be answered by it when it receives a request. For each request, the server will use the appropriate `FakeServer.Response` based on the way the route was configured.
 
-  ### Routes with a single response
-  When the test expects the route to receive only one request, it is appropriate to configure this route with a single response.
+  Besides the path, you need to tell the server what to reply when that path is requested. FakeServer accepts three types of response:
+
+  - a single `FakeServer.Response` structure
+  - a list of `FakeServer.Response` structures
+  - a function with arity 1
+
+  ### Routes with a single FakeServer.Response structure
+  When a route is expected to be called once or to always reply the same thing, simply configure it with a `FakeServer.Response` structure as response.
+  Every request to this path will always receive the same response.
 
   ```elixir
-  test_with_server "raises UserNotFound error when the user is not found on server" do
-    route "/user/" <> @user_id, Response.not_found
+  test_with_server "Updating a user always returns 204" do
+    route "/user/:id", Response.no_content!()
 
-    assert_raise, MyApp.Errors.UserNotFound, fn ->
-      MyApp.External.User.get(@user_id)
-    end
+    response = HTTPoison.put!(FakeServer.address <> "/user/1234")
+    assert response.status_code == 204
+
+    response = HTTPoison.put!(FakeServer.address <> "/user/5678")
+    assert response.status_code == 204
   end
   ```
 
-  ### Routes with lists
+  ### Routes with a list of FakeServer.Response structure
+  When the route is configured with a `FakeServer.Response` structure list, the server will reply every request with the first element in the list and then remove it.
+  If the list is empty, the server will reply `FakeServer.Response.default/0`.
 
-  When the route is configured with a list of `FakeServer.Response`s, the server will respond with the first element in the list and then remove it. This will be repeated for each request made for this route. If the list is empty, the server will respond with its `default_response`.
-
-  ```
+  ```elixir
   test_with_server "the server will always reply the first element and then remove it" do
     route "/", [Response.ok, Response.not_found, Response.bad_request]
     assert FakeServer.hits == 0
@@ -138,36 +155,27 @@ defmodule FakeServer do
     assert response.status_code == 400
     assert FakeServer.hits == 3
   end
-
-  test_with_server "default response can be configured and will be replied when the response list is empty", [default_response: Response.bad_request] do
-    route "/", []
-    assert FakeServer.hits == 0
-
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 400
-    assert FakeServer.hits == 1
-
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 400
-    assert FakeServer.hits == 2
-  end
   ```
 
   ### Configuring a route with a function
-
-  You can configure a route to execute a function every time a request arrives. This function must accept a single argument, which is an `FakeServer.Request` object that holds request information. The `FakeServer.Request` structure holds several information about the request, such as method, headers and query strings.
+  You can configure a route to execute a function every time a request arrives.
+  This function must accept a single argument, which is an `FakeServer.Request` object.
+  The `FakeServer.Request` structure holds several information about the request, such as method, headers and query strings.
 
   Configure a route with a function is useful when you need to simulate timeouts, validate the presence of headers or some mandatory parameters.
+  It also can be useful when used together with route path binding.
 
-  The function will be called every time a request arrives at that route. If the return value of the function is a `FakeServer.Response`, this response will be replied. However, if the return is not a `FakeServer.Response`, the server `default_response` is returned.
+  The function will be called every time the route is requested.
+  If the return value of the function is a `FakeServer.Response`, this response will be replied.
+  However, if the function return value is not a `FakeServer.Response`, it will reply `FakeServer.Response.default/0`.
 
   ```elixir
-  test_with_server "the server will return the default_response if the function return is not a Response struct", [default_response: Response.not_found("Ops!")] do
+  test_with_server "the server will return the default response if the function return is not a Response struct" do
     route "/", fn(_) -> :ok end
 
     response = HTTPoison.get! FakeServer.address <> "/"
-    assert response.status_code == 404
-    assert response.body == "Ops!"
+    assert response.status_code == 200
+    assert response.body == ~s<{"message": "This is a default response from FakeServer"}>
   end
 
   test_with_server "you can evaluate the request object to choose what to reply" do
@@ -190,20 +198,6 @@ defmodule FakeServer do
     response = HTTPoison.get! FakeServer.address <> "/?access_token=1234"
     assert response.status_code == 200
     assert response.body == "Welcome!"
-  end
-  ```
-
-  ### Responses
-  The server will always use a struct to set the response. You can define the headers and body of this struct using `FakeServer.Response` helpers like `FakeServer.Response.ok/2` or `FakeServer.Response.not_found/2`. There are helpers like these for most of the HTTP status codes.
-
-  You can also use `FakeServer.Response.new/3` or even create the struct yourself. For more details see `FakeServer.Response` docs.
-
-  ```elixir
-  test_with_server "adding body and headers to the response" do
-    route "/", do: Response.ok(~s<{"response": "ok"}>, %{"x-my-header" => 'fake-server'})
-
-    response = HTTPoison.get! FakeServer.address <> "/"
-    assert Enum.any?(response.headers, fn(header) -> header == {"x-my-header", "fake-server"} end)
   end
   ```
   """

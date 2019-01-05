@@ -1,4 +1,6 @@
 defmodule FakeServer.Instance do
+  @moduledoc false
+
   defstruct [
     access: nil,
     errors: [],
