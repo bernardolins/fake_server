@@ -13,7 +13,7 @@ defmodule ResponseListTest do
     test "returns {:error, reason} if an invalid response is added" do
       {:ok, list_id} = ResponseList.start_link
       assert {:error, {1, "invalid response type"}} = ResponseList.add_response(list_id, 1)
-      assert {:error, {600, "invalid status code"}} = ResponseList.add_response(list_id, %Response{code: 600})
+      assert {:error, {600, "invalid status code"}} = ResponseList.add_response(list_id, %Response{status: 600})
       ResponseList.stop(list_id)
     end
   end
