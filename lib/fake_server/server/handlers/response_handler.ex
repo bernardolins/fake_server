@@ -11,7 +11,7 @@ defmodule FakeServer.Handlers.ResponseHandler do
     with %Route{} = route         <- Keyword.get(state, :route, nil),
          {:ok, access}            <- extract_access(state),
          :ok                      <- Access.compute_access(access, :cowboy_req.path(req)),
-         %Response{} = response   <- execute_response(req, route)
+         %Response{} = response   <- execute_response(route)
     do
       req = :cowboy_req.reply(response.status, response.headers, response.body, req)
       {:ok, req, state}
@@ -24,7 +24,7 @@ defmodule FakeServer.Handlers.ResponseHandler do
 
   def terminate(_, _, _), do: :ok
 
-  defp execute_response(req, route) do
+  defp execute_response(route) do
     case route.response do
       %Response{} = response -> response
       {:ok, %Response{} = response} -> response
