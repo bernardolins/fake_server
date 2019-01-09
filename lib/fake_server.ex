@@ -1,8 +1,4 @@
 defmodule FakeServer do
-
-  alias FakeServer.HTTP.Server
-  alias FakeServer.Agents.EnvAgent
-
   @moduledoc """
   Manage HTTP servers on your tests
   """

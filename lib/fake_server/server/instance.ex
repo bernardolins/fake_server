@@ -51,15 +51,15 @@ defmodule FakeServer.Instance do
 
   def handle_call({:add_route, path, response}, _, server) do
     case update_router(path, response, server) do
-      {:ok, new_server}         -> {:reply, :ok, new_server}
-      {:error, reason} = error  -> {:reply, error, server}
+      {:ok, new_server}    -> {:reply, :ok, new_server}
+      {:error, _} = error  -> {:reply, error, server}
     end
   end
 
   def handle_call(:access_list, _, server) do
     case get_access_list(server) do
-      {:ok, access_list} = reply  -> {:reply, reply, server}
-      {:error, reason} = error    -> {:reply, error, server}
+      {:ok, _} = reply    -> {:reply, reply, server}
+      {:error, _} = error -> {:reply, error, server}
     end
   end
 
