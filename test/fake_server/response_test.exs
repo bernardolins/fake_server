@@ -18,6 +18,76 @@ defmodule ResponseTest do
     test "accept the response headers as a map" do
       assert {:ok, %Response{headers: %{"x-my-header" => "fake-server"}}} = Response.new(200, "", %{"x-my-header" => "fake-server"})
     end
+
+    test "returns {:error, {headers, reason}} if headers are not a map" do
+      assert {:error, {[], "response headers must be a map"}} == Response.new(200, "", [])
+      assert {:error, {"", "response headers must be a map"}} == Response.new(200, "", "")
+      assert {:error, {12, "response headers must be a map"}} == Response.new(200, "", 12)
+    end
+
+    test "returns {:error, {headers, reason}} if headers keys are not strings" do
+      assert {:error, {%{content_type: "application/json"}, "all header keys must be strings"}} == Response.new(200, "", %{content_type: "application/json"})
+    end
+
+    test "returns {:error, {body, reason}} if body is not a map or string" do
+      assert {:error, {'hello', "body must be a map or a string"}} == Response.new(200, 'hello')
+      assert {:error, {1234567, "body must be a map or a string"}} == Response.new(200, 1234567)
+    end
+
+    test "returns {:error, {body, reason}} if body could not be encoded" do
+      assert {:error, {%{test: {:a, 1}}, "could not turn body map into json"}} == Response.new(200, %{test: {:a, 1}})
+    end
+
+    test "returns {:error, {status, reason}} if status is not a valid integer" do
+      assert {:error, {600, "invalid status code"}} == Response.new(600)
+      assert {:error, {-200, "invalid status code"}} == Response.new(-200)
+      assert {:error, {"200", "invalid status code"}} == Response.new("200")
+    end
+  end
+
+  describe "#new!" do
+    test "accept the response status code as a mandatory parameter" do
+      assert %Response{status: 200} = Response.new!(200)
+    end
+
+    test "accept the response body as string" do
+      assert %Response{body: ~s<{"message": "This is a body"}>} = Response.new!(200, ~s<{"message": "This is a body"}>)
+    end
+
+    test "encode the body if it is a valid json map" do
+      assert %Response{body: ~s<{"message":"This is a body","code":1}>} = Response.new!(200, %{message: "This is a body", code: 1})
+    end
+
+    test "accept the response headers as a map" do
+      assert %Response{headers: %{"x-my-header" => "fake-server"}} = Response.new!(200, "", %{"x-my-header" => "fake-server"})
+    end
+
+    test "raise FakeServer.Error if headers are not a map" do
+      assert_raise FakeServer.Error, ~s<[]: response headers must be a map>, fn -> Response.new!(200, "", []) end
+      assert_raise FakeServer.Error, ~s<"": response headers must be a map>, fn -> Response.new!(200, "", "") end
+      assert_raise FakeServer.Error, ~s<12: response headers must be a map>, fn -> Response.new!(200, "", 12) end
+    end
+
+    test "returns {:error, {headers, reason}} if headers keys are not strings" do
+      assert_raise FakeServer.Error, ~s<%{content_type: "application/json"}: all header keys must be strings>, fn ->
+        Response.new!(200, "", %{content_type: "application/json"})
+      end
+    end
+
+    test "returns {:error, {body, reason}} if body is not a map or string" do
+      assert_raise FakeServer.Error, ~s<'hello': body must be a map or a string>, fn -> Response.new!(200, 'hello') end
+      assert_raise FakeServer.Error, ~s<1234567: body must be a map or a string>, fn -> Response.new!(200, 1234567) end
+    end
+
+    test "returns {:error, {body, reason}} if body could not be encoded" do
+      assert_raise FakeServer.Error, ~s<%{test: {:a, 1}}: could not turn body map into json>, fn -> Response.new!(200, %{test: {:a, 1}}) end
+    end
+
+    test "returns {:error, {status, reason}} if status is not a valid integer" do
+      assert_raise FakeServer.Error, ~s<600: invalid status code>, fn -> Response.new!(600) end
+      assert_raise FakeServer.Error, ~s<-200: invalid status code>, fn -> Response.new!(-200) end
+      assert_raise FakeServer.Error, ~s<"200": invalid status code>, fn -> Response.new!("200") end
+    end
   end
 
   describe "#validate" do

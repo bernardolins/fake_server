@@ -8,7 +8,7 @@ defmodule FakeServer.Route do
   ]
 
   def create(opts \\ []) do
-    with route <- struct(__MODULE__, opts),
+    with route        <- struct(__MODULE__, opts),
          {:ok, route} <- ensure_path(route),
          {:ok, route} <- ensure_response(route),
          {:ok, route} <- when_list_response(route),

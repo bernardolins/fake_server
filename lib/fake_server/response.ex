@@ -40,7 +40,6 @@ defmodule FakeServer.Response do
   @doc """
   Similar to `new/3`, but raises `FakeServer.Error` when validation fails.
   """
-
   def new!(status_code, body \\ "", headers \\ %{}) do
     case new(status_code, body, headers) do
       {:ok, response} -> response
