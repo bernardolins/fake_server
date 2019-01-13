@@ -63,30 +63,30 @@ defmodule ResponseTest do
     end
 
     test "raise FakeServer.Error if headers are not a map" do
-      assert_raise FakeServer.Error, ~s<[]: response headers must be a map>, fn -> Response.new!(200, "", []) end
-      assert_raise FakeServer.Error, ~s<"": response headers must be a map>, fn -> Response.new!(200, "", "") end
-      assert_raise FakeServer.Error, ~s<12: response headers must be a map>, fn -> Response.new!(200, "", 12) end
+      assert_raise FakeServer.Error, ~s<[]: "response headers must be a map">, fn -> Response.new!(200, "", []) end
+      assert_raise FakeServer.Error, ~s<"": "response headers must be a map">, fn -> Response.new!(200, "", "") end
+      assert_raise FakeServer.Error, ~s<12: "response headers must be a map">, fn -> Response.new!(200, "", 12) end
     end
 
     test "returns {:error, {headers, reason}} if headers keys are not strings" do
-      assert_raise FakeServer.Error, ~s<%{content_type: "application/json"}: all header keys must be strings>, fn ->
+      assert_raise FakeServer.Error, ~s<%{content_type: "application/json"}: "all header keys must be strings">, fn ->
         Response.new!(200, "", %{content_type: "application/json"})
       end
     end
 
     test "returns {:error, {body, reason}} if body is not a map or string" do
-      assert_raise FakeServer.Error, ~s<'hello': body must be a map or a string>, fn -> Response.new!(200, 'hello') end
-      assert_raise FakeServer.Error, ~s<1234567: body must be a map or a string>, fn -> Response.new!(200, 1234567) end
+      assert_raise FakeServer.Error, ~s<'hello': "body must be a map or a string">, fn -> Response.new!(200, 'hello') end
+      assert_raise FakeServer.Error, ~s<1234567: "body must be a map or a string">, fn -> Response.new!(200, 1234567) end
     end
 
     test "returns {:error, {body, reason}} if body could not be encoded" do
-      assert_raise FakeServer.Error, ~s<%{test: {:a, 1}}: could not turn body map into json>, fn -> Response.new!(200, %{test: {:a, 1}}) end
+      assert_raise FakeServer.Error, ~s<%{test: {:a, 1}}: "could not turn body map into json">, fn -> Response.new!(200, %{test: {:a, 1}}) end
     end
 
     test "returns {:error, {status, reason}} if status is not a valid integer" do
-      assert_raise FakeServer.Error, ~s<600: invalid status code>, fn -> Response.new!(600) end
-      assert_raise FakeServer.Error, ~s<-200: invalid status code>, fn -> Response.new!(-200) end
-      assert_raise FakeServer.Error, ~s<"200": invalid status code>, fn -> Response.new!("200") end
+      assert_raise FakeServer.Error, ~s<600: "invalid status code">, fn -> Response.new!(600) end
+      assert_raise FakeServer.Error, ~s<-200: "invalid status code">, fn -> Response.new!(-200) end
+      assert_raise FakeServer.Error, ~s<"200": "invalid status code">, fn -> Response.new!("200") end
     end
   end
 
