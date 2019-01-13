@@ -10,6 +10,11 @@ defmodule FakeServer.Mixfile do
      aliases: aliases(),
      test_coverage: [tool: ExCoveralls],
      elixirc_paths: elixirc_paths(Mix.env),
+     docs: [
+       groups_for_functions: [
+         Macros: & &1[:section] == :macro,
+       ]
+     ],
      deps: deps()]
   end
 
