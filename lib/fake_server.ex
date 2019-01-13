@@ -4,6 +4,194 @@ defmodule FakeServer do
   """
 
   @doc """
+  Starts an HTTP server.
+
+  Returns the tuple `{:ok, pid}` if the server started and `{:error, reason}` if any error happens.
+
+  ## Parameters:
+  - `name`: An identifier to the server. It must be an atom.
+  - `port` (optional): The port the server will listen. It must be an integer between 55000 and 65000.
+
+  ## Examples
+
+  ```
+  iex> FakeServer.start(:myserver)
+  {:ok, #PID<0.203.0>}
+
+  iex> FakeServer.start(:myserver2, 55_000)
+  {:ok, #PID<0.219.0>}
+
+  iex> FakeServer.start(:myserver3, 54_999)
+  {:error, {54999, "port is not in allowed range: 55000..65000"}}
+  ```
+  """
+  def start(name, port \\ nil) do
+    %{server_name: name, port: port}
+    |> FakeServer.Instance.run()
+  end
+
+  @doc """
+  Starts an HTTP server.
+
+  Unlike `start/1`, it will not return a tuple, but the server pid only. It will raise `FakeServer.Error` if any error happens.
+
+  ## Parameters:
+  - `name`: An identifier to the server. It must be an atom.
+  - `port` (optional): The port the server will listen. It must be an integer between 55000 and 65000.
+
+  ## Examples
+
+  ```
+  iex> FakeServer.start!(:myserver1)
+  #PID<0.203.0>
+
+  iex> FakeServer.start!(:myserver2, 55_000)
+  #PID<0.219.0>
+
+  iex> FakeServer.start!(:myserver3, 54_999)
+  ** (FakeServer.Error) 54999: port is not in allowed range: 55000..65000
+  ```
+  """
+  def start!(name, port \\ nil) do
+    case start(name, port) do
+      {:ok, pid} -> pid
+      {:error, reason} -> raise FakeServer.Error, reason
+    end
+  end
+
+  @doc """
+  Stops a given `server`.
+  """
+  def stop(server), do: FakeServer.Instance.stop(server)
+
+  @doc """
+  Returns the server port.
+
+  ## Parameters
+  - `server`: Can be a server `name` or `PID`. Make sure the server is running, using `FakeServer.start/2`.
+
+  Returns the tuple `{:ok, port}` if the `server` is running and `{:error, reason}` if any error happens.
+
+  ## Example
+
+  ```
+  iex> {:ok, pid} = FakeServer.start(:myserver)
+  {:ok, #PID<0.203.0>}
+
+  iex> FakeServer.port(:myserver)
+  {:ok, 62767}
+
+  iex> FakeServer.port(pid)
+  {:ok, 62767}
+
+  iex> FakeServer.port(:otherserver)
+  {:error, {:otherserver, "this server is not running"}}
+  ```
+  """
+  def port(server) do
+    try do
+      {:ok, FakeServer.Instance.port(server)}
+    catch
+      :exit, _ -> {:error, {server, "this server is not running"}}
+    end
+  end
+
+  @doc """
+  Returns the server port.
+
+  ## Parameters
+  - `server`: It can be a server name or PID
+
+  Unlike `port/1`, it will not return a tuple, but the port number only. It will raise `FakeServer.Error` if any error happens.
+
+  ## Example
+  ```
+  iex> {:ok, pid} = FakeServer.start(:myserver)
+  {:ok, #PID<0.194.0>}
+
+  iex> FakeServer.port!(:myserver)
+  57198
+
+  iex> FakeServer.port!(pid)
+  57198
+
+  iex> FakeServer.port!(:otherserver)
+  ** (FakeServer.Error) :otherserver: this server is not running
+  ```
+  """
+  def port!(server) do
+    case port(server) do
+      {:ok, port_value} -> port_value
+      {:error, reason}  -> raise FakeServer.Error, reason
+    end
+  end
+
+  @doc """
+  Adds a route to a `server`.
+
+  Returns `:ok` if the route is added and `{:error, reason}` if any error happens.
+  It will override an existing route if you add another route with the same path.
+  Adding a route with this function is similar to `FakeServer.route/2` macro.
+
+  ## Parameters
+  - `server`: It can be a server name or PID.
+  - `path`: A string representing the route path. See `FakeServer.route/2` for more information.
+  - `response`: The response server will give use when this path is requested. See `FakeServer.route/2` for more information.
+
+  ## Examples
+  ```
+  iex> FakeServer.start(:myserver)
+  {:ok, #PID<0.204.0>}
+
+  iex> FakeServer.put_route(:myserver, "/healthcheck", FakeServer.Response.ok("WORKING"))
+  :ok
+
+  iex> FakeServer.put_route(:myserver, "/timeout", fn(_) -> :timer.sleep(10_000) end)
+  :ok
+  ```
+  """
+  def put_route(server, path, response) do
+    try do
+      FakeServer.Instance.add_route(server, path, response)
+    catch
+      :exit, _ -> {:error, {server, "this server is not running"}}
+    end
+  end
+
+  @doc """
+  Adds a route to a `server`.
+
+  Returns `:ok` if the route is added and raise `FakeServer.Error` if any error happens.
+  It will override an existing route if you add another route with the same path.
+  Adding a route with this function is similar to `FakeServer.route/2` macro.
+
+  ## Parameters
+  - `server`: It can be a server name or PID.
+  - `path`: A string representing the route path. See `FakeServer.route/2` for more information.
+  - `response`: The response server will give use when this path is requested. See `FakeServer.route/2` for more information.
+
+  ## Examples
+  ```
+  iex> FakeServer.start(:myserver)
+  {:ok, #PID<0.204.0>}
+
+  iex> FakeServer.put_route(:myserver, "/healthcheck", FakeServer.Response.ok("WORKING"))
+  :ok
+
+  iex> FakeServer.put_route(:myserver, "/timeout", fn(_) -> :timer.sleep(10_000) end)
+  :ok
+  ```
+  """
+  def put_route!(server, path, response) do
+    case put_route(server, path, response) do
+      :ok -> :ok
+      {:error, reason} -> raise FakeServer.Error, reason
+    end
+  end
+
+  @doc section: :macro
+  defmacro test_with_server(test_description, opts \\ [], test_block)
+  @doc """
   Runs a test with an HTTP server.
 
   If you need an HTTP server on your test, just write it using `test_with_server/3` instead of `ExUnit.Case.test/3`. Their arguments are similar: A description (the `test_description` argument), the implementation of the test case itself (the `list` argument) and an optional list of parameters (the `opts` argument).
@@ -37,7 +225,7 @@ defmodule FakeServer do
   end
   ```
   """
-  defmacro test_with_server(test_description, opts \\ [], do: test_block) do
+  defmacro test_with_server(test_description, opts, do: test_block) do
     quote do
       test unquote(test_description) do
         case FakeServer.Instance.run(unquote(opts)) do
@@ -53,6 +241,8 @@ defmodule FakeServer do
     end
   end
 
+  @doc section: :macro
+  defmacro route(path, response_block)
   @doc """
   Adds a route to a server and sets its response.
 
@@ -207,6 +397,8 @@ defmodule FakeServer do
     end
   end
 
+  @doc section: :macro
+  defmacro address()
   @doc """
   Returns the current server address.
 
@@ -226,6 +418,8 @@ defmodule FakeServer do
     end
   end
 
+  @doc section: :macro
+  defmacro http_address()
   @doc """
   Returns the current server HTTP address.
 
@@ -245,6 +439,8 @@ defmodule FakeServer do
     end
   end
 
+  @doc section: :macro
+  defmacro port()
   @doc """
   Returns the current server TCP port.
 
@@ -264,6 +460,8 @@ defmodule FakeServer do
     end
   end
 
+  @doc section: :macro
+  defmacro hits()
   @doc """
   Returns the number of requests made to the server.
 
@@ -291,6 +489,8 @@ defmodule FakeServer do
     end
   end
 
+  @doc section: :macro
+  defmacro hits(path)
   @doc """
   Returns the number of requests made to a route in the server.
 
