@@ -5,13 +5,13 @@
 
 FakeServer is an HTTP server that simulates responses. It can be used in test and development environments, helping to validate the behavior of your application if there are errors or unexpected responses from some external HTTP service.
 
-It provides the `test_with_server` macro to be used together with [ExUnit](https://hexdocs.pm/ex_unit/ExUnit.html), making it easier to write tests that need to request external services. Instead of creating a mock when you need to request an external HTTP service, you can use a real HTTP server that will reply a deterministic response and validate if your application can handle it.
+It provides the `test_with_server` macro to be used together with [ExUnit](https://hexdocs.pm/ex_unit/ExUnit.html), making it easier to write tests that need to request external services. Instead of creating a mock when you need to request to make a request, you can use a real HTTP server that will reply a deterministic response. This way you can validate if your application can handle it.
 
 `FakeServer` can also be used through functions, when ExUnit is not available (in the console, for example).
 
 ## Installation
 
-**Important**: From the version 2.0, FakeServer only supports cowboy `2.x`. If you have cowboy `1.x` as dependency, use FakeServer version `1.5`.
+**Important**: From the version 2.0, FakeServer only supports cowboy 2.x. If you have cowboy 1.x as dependency, use FakeServer version 1.5.
 
 FakeServer is available on [Hex](https://hex.pm/packages/fake_server). First, add it to `mix.exs` as a test dependency:
 
@@ -40,7 +40,7 @@ FakeServer provides the macro `FakeServer.test_with_server`. It works like ExUni
 You can use the `FakeServer.route` macro to add a route and setup it's response. Use `FakeServer.http_address` to get the address of the server running in the current test. Each test will start its own HTTP server.
 
 ```elixir
-defmodule Exfootball.External.FootballDataTest do
+defmodule MyTest do
   use ExUnit.Case
   import FakeServer
 
@@ -87,7 +87,7 @@ end
 
 You can use a fake server without ExUnit with `FakeServer.start` and other helper functions available. Functions work similar to macros, but can be used outside the tests.
 
-```
+```elixir
 iex> {:ok, pid} = FakeServer.start(:my_server)
 {:ok, #PID<0.302.0>}
 
