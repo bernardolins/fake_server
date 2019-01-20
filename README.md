@@ -5,7 +5,7 @@
 
 FakeServer is an HTTP server that simulates responses. It can be used in test and development environments, helping to validate the behavior of your application if there are errors or unexpected responses from some external HTTP service.
 
-It provides the `test_with_server` macro to be used together with [ExUnit](https://hexdocs.pm/ex_unit/ExUnit.html), making it easier to write tests that need to request external services. Instead of creating a mock when you need to request to make a request, you can use a real HTTP server that will reply a deterministic response. This way you can validate if your application can handle it.
+It provides the `test_with_server` macro to be used together with [ExUnit](https://hexdocs.pm/ex_unit/ExUnit.html), making it easier to write tests that need to request external services. Instead of creating a mock when you need make a request, you can use a real HTTP server that will reply a deterministic response. This way you can validate if your application can handle it.
 
 `FakeServer` can also be used through functions, when ExUnit is not available (in the console, for example).
 
@@ -18,7 +18,7 @@ FakeServer is available on [Hex](https://hex.pm/packages/fake_server). First, ad
 ```elixir
 def deps do
   [
-    {:fake_server, "~> 1.5", only: :test}
+    {:fake_server, "~> 2.0", only: :test}
   ]
 end
 ```
