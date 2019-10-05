@@ -198,6 +198,8 @@ defmodule FakeServer do
 
   The server will start just before your test block and will stop just before the test exits. Each `test_with_server/3` has its own server. By default, all servers will start in a random unused port, which allows you to run your tests with `ExUnit.Case async: true` option enabled.
 
+  If you need to do some setup before every test_with_server tests, you can define a setup_test_with_server/1 function in your module. This function will receive a %FakeServer.Instance{} struct as a parameter.
+
   ## Server options
   You can set some options to the server before it starts using the `opts` params. The following options are accepted:
 
@@ -213,6 +215,10 @@ defmodule FakeServer do
 
     alias FakeServer.Response
     alias FakeServer.Route
+
+    def setup_test_with_server(env) do
+      IO.puts "This server is running at port \#{env.port}"
+    end
 
     test_with_server "supports inline port configuration", [port: 63_543] do
       assert FakeServer.port() == 63_543
@@ -231,6 +237,9 @@ defmodule FakeServer do
         case FakeServer.Instance.run(unquote(opts)) do
           {:ok, server} ->
             var!(current_server, FakeServer) = server
+            if Kernel.function_exported?(__MODULE__, :setup_test_with_server, 1) do
+              Kernel.apply(__MODULE__, :setup_test_with_server, [FakeServer.Instance.state(server)])
+            end
             unquote(test_block)
             FakeServer.Instance.stop(server)
 

@@ -6,6 +6,10 @@ defmodule FakeServer.Integration.TestWithServerTest do
   alias FakeServer.Response
   alias FakeServer.Route
 
+  def setup_test_with_server(env) do
+    assert %FakeServer.Instance{port: _, routes: _, router: _} = env
+  end
+
   describe "test_with_server macro" do
     test_with_server "supports inline port configuration", [port: 63_543] do
       assert FakeServer.port() == 63_543
