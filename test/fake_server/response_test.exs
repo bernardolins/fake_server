@@ -156,6 +156,17 @@ defmodule ResponseTest do
       end)
     end
 
+    test "all_4xx can exclude some status codes with the :except filter" do
+      assert length(Response.all_4xx(except: [404])) == 23
+      assert length(Response.all_4xx(except: [404, 405, 406])) == 21
+      assert !Enum.member?(Response.all_4xx(except: [404]), %Response{status: 404})
+      assert Enum.member?(Response.all_4xx(except: [404]), %Response{status: 408})
+      assert !Enum.member?(Response.all_4xx(except: [404, 405, 406]), %Response{status: 404})
+      assert !Enum.member?(Response.all_4xx(except: [404, 405, 406]), %Response{status: 405})
+      assert !Enum.member?(Response.all_4xx(except: [404, 405, 406]), %Response{status: 406})
+      assert Enum.member?(Response.all_4xx(except: [404, 405, 406]), %Response{status: 408})
+    end
+
     test "normal version returns {:ok, response} with the correspondent status code" do
       assert {:ok, %Response{status: 400}} = Response.bad_request
       assert {:ok, %Response{status: 401}} = Response.unauthorized
@@ -217,6 +228,17 @@ defmodule ResponseTest do
       Enum.each(Response.all_5xx, fn(response) ->
         assert response.status >= 500 && response.status <= 511
       end)
+    end
+
+    test "all_5xx can exclude some status codes with the :except filter" do
+      assert length(Response.all_5xx(except: [500])) == 9
+      assert length(Response.all_5xx(except: [500, 501, 502])) == 7
+      assert !Enum.member?(Response.all_5xx(except: [500]), %Response{status: 500})
+      assert Enum.member?(Response.all_5xx(except: [500]), %Response{status: 503})
+      assert !Enum.member?(Response.all_5xx(except: [500, 501, 502]), %Response{status: 500})
+      assert !Enum.member?(Response.all_5xx(except: [500, 501, 502]), %Response{status: 501})
+      assert !Enum.member?(Response.all_5xx(except: [500, 501, 502]), %Response{status: 502})
+      assert Enum.member?(Response.all_5xx(except: [500, 501, 502]), %Response{status: 503})
     end
 
     test "normal version returns {:ok, response} with the correspondent status code" do

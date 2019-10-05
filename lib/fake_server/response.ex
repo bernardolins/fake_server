@@ -190,6 +190,13 @@ defmodule FakeServer.Response do
   end
 
   @doc """
+  Similar to `all_4xx/0`, but excludes the status codes in parameter.
+  """
+  def all_4xx(except: except) do
+    all_4xx() |> Enum.reject(&(Enum.member?(except, &1.status)))
+  end
+
+  @doc """
   Creates a new response with status 400
 
   Returns `{:ok, response}` tuple on succes and `{:error, reason}` when validation fails.
@@ -542,6 +549,13 @@ defmodule FakeServer.Response do
       not_extended!(),
       network_authentication_required!()
     ]
+  end
+
+  @doc """
+  Similar to `all_5xx/0`, but excludes the status codes in parameter.
+  """
+  def all_5xx(except: except) do
+    all_5xx() |> Enum.reject(&(Enum.member?(except, &1.status)))
   end
 
   @doc """
