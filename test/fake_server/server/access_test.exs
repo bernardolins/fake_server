@@ -4,8 +4,8 @@ defmodule FakeServer.Server.AccessTest do
 
   test "compute access for a route" do
     {:ok, server} = Access.start_link
-    assert Access.compute_access(server, "/test")
-    assert Access.access_list(server) == ["/test"]
+    assert Access.compute_access(server, %FakeServer.Request{path: "/test", method: "PUT", headers: %{}, body: ""})
+    assert Access.access_list(server) == [%FakeServer.Request{path: "/test", method: "PUT", headers: %{}, body: ""}]
     Access.stop(server)
   end
 end

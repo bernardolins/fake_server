@@ -3,6 +3,7 @@ defmodule FakeServer.Handlers.ResponseHandler do
 
   alias FakeServer.Route
   alias FakeServer.Response
+  alias FakeServer.Request
   alias FakeServer.Server.Access
 
   require Logger
@@ -10,7 +11,8 @@ defmodule FakeServer.Handlers.ResponseHandler do
   def init(req, state) do
     with %Route{} = route         <- Keyword.get(state, :route, nil),
          {:ok, access}            <- extract_access(state),
-         :ok                      <- Access.compute_access(access, :cowboy_req.path(req)),
+         %Request{} = request     <- Request.from_cowboy_req(req),
+         :ok                      <- Access.compute_access(access, request),
          %Response{} = response   <- execute_response(route)
     do
       req = :cowboy_req.reply(response.status, response.headers, response.body, req)

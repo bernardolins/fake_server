@@ -527,8 +527,54 @@ defmodule FakeServer do
         {:ok, access_list} ->
           access_list_path =
             access_list
-            |> Enum.filter(&(&1 == unquote(path)))
+            |> Enum.filter(&(&1.path == unquote(path)))
           length(access_list_path)
+        {:error, reason} -> raise FakeServer.Error, reason
+      end
+    end
+  end
+
+  @doc section: :macro
+  defmacro request_received(path, opts \\ [])
+  @doc """
+  Verifies if a specific request was received a certain number of times.
+
+  If the `count` parameter is not provided, we check if the request was received at least once.
+
+  You can only call `FakeServer.request_received/2` inside `test_with_server/3`.
+
+  ## Usage
+  ```elixir
+  test_with_server "user update parameters" do
+    route "/users/save", Response.no_content!
+
+    assert :ok == User.save()
+
+    assert request_received "/users/save",
+      method: "PUT",
+      body: "name=new_name&email=new_email@test.com",
+      headers: %{"authorization" => "bearer mytoken"} ,
+      count: 1
+  end
+  ```
+  """
+  defmacro request_received(path, opts) do
+    quote do
+      server = var!(current_server, FakeServer)
+      opts = Enum.into(unquote(opts), %{})
+      case FakeServer.Instance.access_list(server) do
+        {:ok, access_list} ->
+          matches =
+            access_list
+            |> Enum.filter(&(&1.path == unquote(path)))
+            |> Enum.filter(&(!Map.has_key?(opts, :body) || &1.body == opts.body))
+            |> Enum.filter(&(!Map.has_key?(opts, :method) || &1.method == opts.method))
+            |> Enum.filter(&(!Map.has_key?(opts, :headers) || Map.equal?(&1.headers, Map.merge(&1.headers, opts.headers))))
+          if Map.has_key?(opts, :count) do
+            length(matches) == opts.count
+          else
+            length(matches) > 0
+          end
         {:error, reason} -> raise FakeServer.Error, reason
       end
     end
