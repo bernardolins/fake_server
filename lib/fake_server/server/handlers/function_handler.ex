@@ -12,7 +12,7 @@ defmodule FakeServer.Handlers.FunctionHandler do
     with %Route{} = route         <- Keyword.get(state, :route, nil),
          {:ok, access}            <- extract_access(state),
          %Request{} = request     <- Request.from_cowboy_req(req),
-         :ok                      <- Access.compute_access(access, :cowboy_req.path(req)),
+         :ok                      <- Access.compute_access(access, request),
          %Response{} = response   <- execute_response(request, route)
     do
       req = :cowboy_req.reply(response.status, response.headers, response.body, req)

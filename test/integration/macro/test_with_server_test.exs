@@ -116,6 +116,30 @@ defmodule FakeServer.Integration.TestWithServerTest do
       assert FakeServer.hits("/test3") == 1
     end
 
+    test_with_server "supports assertions on received requests" do
+      headers = %{"authorization" => "bearer mytoken"}
+      route "/test1", Response.no_content!()
+
+      HTTPoison.put!("#{FakeServer.address}/test1", "body", headers)
+      assert request_received "/test1", method: "PUT", headers: headers, body: "body", count: 1
+      assert request_received "/test1", method: "PUT", headers: headers, body: "body"
+      assert request_received "/test1", method: "PUT", headers: headers
+      assert request_received "/test1", method: "PUT"
+      assert request_received "/test1"
+      assert !request_received "/test1", method: "PUT", headers: headers, body: "body", count: 0
+      assert !request_received "/test1", method: "PUT", headers: headers, body: "wrong body", count: 1
+      assert !request_received "/test1", method: "PUT", headers: %{"authorization" => "wrong"}, body: "body", count: 1
+      assert !request_received "/test1", method: "WRONG", headers: headers, body: "body", count: 1
+
+      HTTPoison.get!("#{FakeServer.address}/test1", headers)
+      HTTPoison.put!("#{FakeServer.address}/test1", "body", headers)
+      assert request_received "/test1", method: "GET", headers: headers, count: 1
+      assert request_received "/test1", method: "PUT", headers: headers, body: "body", count: 2
+
+      assert request_received "/test1", method: "POST", headers: headers, count: 0
+      assert !request_received "/test1", method: "POST"
+    end
+
     test_with_server "supports route binding" do
       route "/test/:param", fn(%Request{path: path}) ->
         if path == "/test/hello", do: Response.ok!(), else: Response.not_found!()
