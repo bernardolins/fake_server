@@ -48,6 +48,7 @@ defmodule FakeServer.Instance do
   def add_route(server, path, response), do: GenServer.call(server, {:add_route, path, response})
   def access_list(server), do: GenServer.call(server, :access_list)
   def port(server), do: GenServer.call(server, :port)
+  def state(server), do: GenServer.call(server, :state)
 
   def handle_call({:add_route, path, response}, _, server) do
     case update_router(path, response, server) do
@@ -65,6 +66,10 @@ defmodule FakeServer.Instance do
 
   def handle_call(:port, _, server) do
     {:reply, server.port, server}
+  end
+
+  def handle_call(:state, _, server) do
+    {:reply, server, server}
   end
 
   defp ensure_server_name(nil), do: {:ok, self()}
