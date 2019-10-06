@@ -557,10 +557,12 @@ defmodule FakeServer do
         {:ok, access_list} ->
           matches =
             access_list
-            |> Enum.filter(&(&1.path == unquote(path)))
-            |> Enum.filter(&(!Map.has_key?(opts, :body) || &1.body == opts.body))
-            |> Enum.filter(&(!Map.has_key?(opts, :method) || &1.method == opts.method))
-            |> Enum.filter(&(!Map.has_key?(opts, :headers) || Map.equal?(&1.headers, Map.merge(&1.headers, opts.headers))))
+            |> Enum.filter(&(
+                 &1.path == unquote(path) &&
+                 (!Map.has_key?(opts, :body) || &1.body == opts.body) &&
+                 (!Map.has_key?(opts, :method) || &1.method == opts.method) &&
+                 (!Map.has_key?(opts, :headers) || Map.equal?(&1.headers, Map.merge(&1.headers, opts.headers)))
+               ))
           if Map.has_key?(opts, :count) do
             length(matches) == opts.count
           else
