@@ -14,7 +14,7 @@ defmodule FakeServer.Response do
   """
 
   @enforce_keys [:status]
-  defstruct [status: nil, body: "", headers: %{}]
+  defstruct status: nil, body: "", headers: %{}
 
   @doc """
   Creates a new Response structure. Returns `{:ok, response}` on success or `{:error, reason}` when validation fails
@@ -28,11 +28,10 @@ defmodule FakeServer.Response do
   ```
   """
   def new(status_code, body \\ "", headers \\ %{}) do
-    with response         <- %__MODULE__{status: status_code, body: body, headers: headers},
-         :ok              <- validate(response),
-         {:ok, response}  <- ensure_body_format(response),
-         {:ok, response}  <- ensure_headers_keys(response)
-    do
+    with response <- %__MODULE__{status: status_code, body: body, headers: headers},
+         :ok <- validate(response),
+         {:ok, response} <- ensure_body_format(response),
+         {:ok, response} <- ensure_headers_keys(response) do
       {:ok, response}
     end
   end
@@ -49,14 +48,23 @@ defmodule FakeServer.Response do
 
   @doc false
   def validate({:ok, %__MODULE__{} = response}), do: validate(response)
+
   def validate(%__MODULE__{body: body, status: status, headers: headers}) do
     cond do
-      not is_map(headers) ->                            {:error, {headers, "response headers must be a map"}}
-      not (is_bitstring(body) or is_map(body)) ->       {:error, {body, "body must be a map or a string"}}
-      not Enum.member?(allowed_status_codes(), status) -> {:error, {status, "invalid status code"}}
-      true ->                                           :ok
+      not is_map(headers) ->
+        {:error, {headers, "response headers must be a map"}}
+
+      not (is_bitstring(body) or is_map(body)) ->
+        {:error, {body, "body must be a map or a string"}}
+
+      not Enum.member?(allowed_status_codes(), status) ->
+        {:error, {status, "invalid status code"}}
+
+      true ->
+        :ok
     end
   end
+
   def validate(response), do: {:error, {response, "invalid response type"}}
 
   @doc """
@@ -193,7 +201,7 @@ defmodule FakeServer.Response do
   Similar to `all_4xx/0`, but excludes the status codes in parameter.
   """
   def all_4xx(except: except) do
-    all_4xx() |> Enum.reject(&(Enum.member?(except, &1.status)))
+    all_4xx() |> Enum.reject(&Enum.member?(except, &1.status))
   end
 
   @doc """
@@ -555,7 +563,7 @@ defmodule FakeServer.Response do
   Similar to `all_5xx/0`, but excludes the status codes in parameter.
   """
   def all_5xx(except: except) do
-    all_5xx() |> Enum.reject(&(Enum.member?(except, &1.status)))
+    all_5xx() |> Enum.reject(&Enum.member?(except, &1.status))
   end
 
   @doc """
@@ -721,18 +729,66 @@ defmodule FakeServer.Response do
 
   defp allowed_status_codes() do
     [
-      100, 101, 102, 103, 200, 201, 202,
-      203, 204, 205, 206, 300, 301, 302,
-      303, 304, 305, 306, 307, 308, 400,
-      401, 403, 404, 405, 406, 407, 408,
-      409, 410, 411, 412, 413, 414, 415,
-      417, 418, 422, 423, 424, 426, 428,
-      429, 431, 500, 501, 502, 503, 504,
-      505, 506, 507, 510, 511
+      100,
+      101,
+      102,
+      103,
+      200,
+      201,
+      202,
+      203,
+      204,
+      205,
+      206,
+      300,
+      301,
+      302,
+      303,
+      304,
+      305,
+      306,
+      307,
+      308,
+      400,
+      401,
+      403,
+      404,
+      405,
+      406,
+      407,
+      408,
+      409,
+      410,
+      411,
+      412,
+      413,
+      414,
+      415,
+      417,
+      418,
+      422,
+      423,
+      424,
+      426,
+      428,
+      429,
+      431,
+      500,
+      501,
+      502,
+      503,
+      504,
+      505,
+      506,
+      507,
+      510,
+      511
     ]
   end
 
-  defp ensure_body_format(%__MODULE__{body: body} = response) when is_bitstring(body), do: {:ok, response}
+  defp ensure_body_format(%__MODULE__{body: body} = response) when is_bitstring(body),
+    do: {:ok, response}
+
   defp ensure_body_format(%__MODULE__{body: body} = response) when is_map(body) do
     case Poison.encode(body) do
       {:ok, body} -> {:ok, %__MODULE__{response | body: body}}
@@ -741,9 +797,10 @@ defmodule FakeServer.Response do
   end
 
   defp ensure_headers_keys(%__MODULE__{headers: headers} = response) do
-    valid? = headers
-    |> Map.keys()
-    |> Enum.all?(&(is_bitstring(&1)))
+    valid? =
+      headers
+      |> Map.keys()
+      |> Enum.all?(&is_bitstring(&1))
 
     if valid?, do: {:ok, response}, else: {:error, {headers, "all header keys must be strings"}}
   end

@@ -2,20 +2,22 @@ defmodule FakeServer.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :fake_server,
-     version: "2.0.0",
-     elixir: "~> 1.4",
-     description: description(),
-     package: package(),
-     aliases: aliases(),
-     test_coverage: [tool: ExCoveralls],
-     elixirc_paths: elixirc_paths(Mix.env),
-     docs: [
-       groups_for_functions: [
-         Macros: & &1[:section] == :macro,
-       ]
-     ],
-     deps: deps()]
+    [
+      app: :fake_server,
+      version: "2.0.0",
+      elixir: "~> 1.4",
+      description: description(),
+      package: package(),
+      aliases: aliases(),
+      test_coverage: [tool: ExCoveralls],
+      elixirc_paths: elixirc_paths(Mix.env()),
+      docs: [
+        groups_for_functions: [
+          Macros: &(&1[:section] == :macro)
+        ]
+      ],
+      deps: deps()
+    ]
   end
 
   def application do
@@ -33,17 +35,19 @@ defmodule FakeServer.Mixfile do
     ]
   end
 
-	defp description do
+  defp description do
     """
     With FakeServer you can create individual HTTP servers for each test case, allowing external requests to be tested without the need for mocks.
     """
   end
 
   defp package do
-    [name: :fake_server,
-     maintainers: ["Bernardo Lins"],
-     licenses: ["Apache 2.0"],
-     links: %{"GitHub" => "https://github.com/bernardolins/fake_server"}]
+    [
+      name: :fake_server,
+      maintainers: ["Bernardo Lins"],
+      licenses: ["Apache 2.0"],
+      links: %{"GitHub" => "https://github.com/bernardolins/fake_server"}
+    ]
   end
 
   defp aliases do

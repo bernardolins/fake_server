@@ -122,7 +122,7 @@ defmodule FakeServer do
   def port!(server) do
     case port(server) do
       {:ok, port_value} -> port_value
-      {:error, reason}  -> raise FakeServer.Error, reason
+      {:error, reason} -> raise FakeServer.Error, reason
     end
   end
 
@@ -191,6 +191,7 @@ defmodule FakeServer do
 
   @doc section: :macro
   defmacro test_with_server(test_description, opts \\ [], test_block)
+
   @doc """
   Runs a test with an HTTP server.
 
@@ -237,9 +238,13 @@ defmodule FakeServer do
         case FakeServer.Instance.run(unquote(opts)) do
           {:ok, server} ->
             var!(current_server, FakeServer) = server
+
             if Kernel.function_exported?(__MODULE__, :setup_test_with_server, 1) do
-              Kernel.apply(__MODULE__, :setup_test_with_server, [FakeServer.Instance.state(server)])
+              Kernel.apply(__MODULE__, :setup_test_with_server, [
+                FakeServer.Instance.state(server)
+              ])
             end
+
             unquote(test_block)
             FakeServer.Instance.stop(server)
 
@@ -252,6 +257,7 @@ defmodule FakeServer do
 
   @doc section: :macro
   defmacro route(path, response_block)
+
   @doc """
   Adds a route to a server and sets its response.
 
@@ -399,6 +405,7 @@ defmodule FakeServer do
   defmacro route(path, response_block) do
     quote do
       server = var!(current_server, FakeServer)
+
       case FakeServer.Instance.add_route(server, unquote(path), unquote(response_block)) do
         :ok -> :ok
         {:error, reason} -> raise FakeServer.Error, reason
@@ -408,6 +415,7 @@ defmodule FakeServer do
 
   @doc section: :macro
   defmacro address()
+
   @doc """
   Returns the current server address.
 
@@ -429,6 +437,7 @@ defmodule FakeServer do
 
   @doc section: :macro
   defmacro http_address()
+
   @doc """
   Returns the current server HTTP address.
 
@@ -450,6 +459,7 @@ defmodule FakeServer do
 
   @doc section: :macro
   defmacro port()
+
   @doc """
   Returns the current server TCP port.
 
@@ -471,6 +481,7 @@ defmodule FakeServer do
 
   @doc section: :macro
   defmacro hits()
+
   @doc """
   Returns the number of requests made to the server.
 
@@ -491,6 +502,7 @@ defmodule FakeServer do
   defmacro hits do
     quote do
       server = var!(current_server, FakeServer)
+
       case FakeServer.Instance.access_list(server) do
         {:ok, access_list} -> length(access_list)
         {:error, reason} -> raise FakeServer.Error, reason
@@ -500,6 +512,7 @@ defmodule FakeServer do
 
   @doc section: :macro
   defmacro hits(path)
+
   @doc """
   Returns the number of requests made to a route in the server.
 
@@ -523,19 +536,24 @@ defmodule FakeServer do
   defmacro hits(path) do
     quote do
       server = var!(current_server, FakeServer)
+
       case FakeServer.Instance.access_list(server) do
         {:ok, access_list} ->
           access_list_path =
             access_list
             |> Enum.filter(&(&1.path == unquote(path)))
+
           length(access_list_path)
-        {:error, reason} -> raise FakeServer.Error, reason
+
+        {:error, reason} ->
+          raise FakeServer.Error, reason
       end
     end
   end
 
   @doc section: :macro
   defmacro request_received(path, opts \\ [])
+
   @doc """
   Verifies if a specific request was received a certain number of times.
 
@@ -562,22 +580,27 @@ defmodule FakeServer do
     quote do
       server = var!(current_server, FakeServer)
       opts = Enum.into(unquote(opts), %{})
+
       case FakeServer.Instance.access_list(server) do
         {:ok, access_list} ->
           matches =
             access_list
-            |> Enum.filter(&(
-                 &1.path == unquote(path) &&
-                 (!Map.has_key?(opts, :body) || &1.body == opts.body) &&
-                 (!Map.has_key?(opts, :method) || &1.method == opts.method) &&
-                 (!Map.has_key?(opts, :headers) || Map.equal?(&1.headers, Map.merge(&1.headers, opts.headers)))
-               ))
+            |> Enum.filter(
+              &(&1.path == unquote(path) &&
+                  (!Map.has_key?(opts, :body) || &1.body == opts.body) &&
+                  (!Map.has_key?(opts, :method) || &1.method == opts.method) &&
+                  (!Map.has_key?(opts, :headers) ||
+                     Map.equal?(&1.headers, Map.merge(&1.headers, opts.headers))))
+            )
+
           if Map.has_key?(opts, :count) do
             length(matches) == opts.count
           else
             length(matches) > 0
           end
-        {:error, reason} -> raise FakeServer.Error, reason
+
+        {:error, reason} ->
+          raise FakeServer.Error, reason
       end
     end
   end
