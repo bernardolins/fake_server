@@ -32,7 +32,9 @@ defmodule FakeServerTest do
     end
 
     test "raise FakeServer.Error if the server name is invalid" do
-      assert_raise FakeServer.Error, ~s<"test": "server name must be an atom">, fn -> FakeServer.start!("test") end
+      assert_raise FakeServer.Error, ~s<"test": "server name must be an atom">, fn ->
+        FakeServer.start!("test")
+      end
     end
   end
 
@@ -44,7 +46,8 @@ defmodule FakeServerTest do
     end
 
     test "returns {:error, reason} if the given name or pid is not from a started server" do
-      assert {:error, {:not_started, "this server is not running"}} == FakeServer.port(:not_started)
+      assert {:error, {:not_started, "this server is not running"}} ==
+               FakeServer.port(:not_started)
     end
   end
 
@@ -56,32 +59,35 @@ defmodule FakeServerTest do
     end
 
     test "raises FakeServer.Error if the given name or pid is not from a started server" do
-      assert_raise FakeServer.Error, ~s<:not_started: "this server is not running">, fn -> FakeServer.port!(:not_started) end
+      assert_raise FakeServer.Error, ~s<:not_started: "this server is not running">, fn ->
+        FakeServer.port!(:not_started)
+      end
     end
   end
 
   describe "#put_route" do
     test "returns :ok if the route is added to a started server" do
       FakeServer.start(:test_ok_put_route)
-      assert :ok == FakeServer.put_route(:test_ok_put_route, "/", FakeServer.Response.ok)
+      assert :ok == FakeServer.put_route(:test_ok_put_route, "/", FakeServer.Response.ok())
       FakeServer.stop(:test_ok_put_route)
     end
 
     test "returns {:error, reason} if the given name or pid is not from a started server" do
-      assert {:error, {:not_started, "this server is not running"}} == FakeServer.put_route(:not_started, "/", FakeServer.Response.ok)
+      assert {:error, {:not_started, "this server is not running"}} ==
+               FakeServer.put_route(:not_started, "/", FakeServer.Response.ok())
     end
   end
 
   describe "#put_route!" do
     test "returns :ok if the route is added to a started server" do
       FakeServer.start(:test_ok_put_route!)
-      assert :ok == FakeServer.put_route!(:test_ok_put_route!, "/", FakeServer.Response.ok)
+      assert :ok == FakeServer.put_route!(:test_ok_put_route!, "/", FakeServer.Response.ok())
       FakeServer.stop(:test_ok_put_route!)
     end
 
     test "raises FakeServer.Error if the given name or pid is not from a started server" do
       assert_raise FakeServer.Error, ~s<:not_started: "this server is not running">, fn ->
-        FakeServer.put_route!(:not_started, "/", FakeServer.Response.ok)
+        FakeServer.put_route!(:not_started, "/", FakeServer.Response.ok())
       end
     end
   end

@@ -9,6 +9,7 @@ defmodule FakeServer.ResponseList do
       :ok ->
         Agent.update(list_id, &(&1 ++ [response]))
         :ok
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -16,8 +17,8 @@ defmodule FakeServer.ResponseList do
 
   def get_next(list_id) do
     Agent.get_and_update(list_id, fn
-      ([response|responses]) -> {response, responses}
-      ([]) -> {FakeServer.Response.default!, []}
+      [response | responses] -> {response, responses}
+      [] -> {FakeServer.Response.default!(), []}
     end)
   end
 end

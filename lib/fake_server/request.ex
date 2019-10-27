@@ -12,15 +12,13 @@ defmodule FakeServer.Request do
     - `query_string`: a string with the query_string.
     - `query`: a map with each one of the parameters from the query string.
   """
-  defstruct [
-    method: "",
-    body: "",
-    headers: %{},
-    path: "",
-    cookies: %{},
-    query_string: "",
-    query: %{}
-  ]
+  defstruct method: "",
+            body: "",
+            headers: %{},
+            path: "",
+            cookies: %{},
+            query_string: "",
+            query: %{}
 
   @doc false
   def from_cowboy_req(cowboy_req) do
@@ -31,7 +29,7 @@ defmodule FakeServer.Request do
       method: method(cowboy_req),
       path: path(cowboy_req),
       query: query(cowboy_req),
-      query_string: query_string(cowboy_req),
+      query_string: query_string(cowboy_req)
     }
   end
 

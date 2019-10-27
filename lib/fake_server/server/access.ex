@@ -5,13 +5,13 @@ defmodule FakeServer.Server.Access do
   def stop(server), do: Agent.stop(server)
 
   def compute_access(server, request) do
-    Agent.update(server, fn(requests) ->
-      [request|requests]
+    Agent.update(server, fn requests ->
+      [request | requests]
     end)
   end
 
   def access_list(server) do
-    Agent.get(server, fn(requests) ->
+    Agent.get(server, fn requests ->
       Enum.reverse(requests)
     end)
   end

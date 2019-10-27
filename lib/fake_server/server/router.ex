@@ -8,6 +8,7 @@ defmodule FakeServer.Router do
       for %Route{} = route <- route_list, Route.valid?(route) do
         {Route.path(route), Route.handler(route), [route: route, access: access_control]}
       end
+
     {:ok, :cowboy_router.compile([{:_, cowboy_routes}])}
   end
 
@@ -15,4 +16,3 @@ defmodule FakeServer.Router do
     {:ok, :cowboy_router.compile([{:_, []}])}
   end
 end
-

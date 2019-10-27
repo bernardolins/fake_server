@@ -130,6 +130,7 @@ defmodule FakeServer.ResponseFactory do
         headers = override_headers(response.headers, header_opts)
         new!(response.status, response.body, headers)
       end
+
       def build(name, body_opts \\ [], header_opts \\ %{}) when is_list(body_opts) do
         response = get_response(name)
         body = override_body_keys(response.body, body_opts)
@@ -138,41 +139,51 @@ defmodule FakeServer.ResponseFactory do
       end
 
       def build_list(list_size, name) when is_integer(list_size) do
-        Enum.map(1..list_size, fn(_) -> __MODULE__.build(name) end)
+        Enum.map(1..list_size, fn _ -> __MODULE__.build(name) end)
       end
 
       def build_list(names_list) do
-        Enum.map(names_list, fn(name) -> __MODULE__.build(name) end)
+        Enum.map(names_list, fn name -> __MODULE__.build(name) end)
       end
 
       defp get_response(name) do
-        function_name = "#{to_string(name)}_response" |> String.to_atom
+        function_name = "#{to_string(name)}_response" |> String.to_atom()
+
         case apply(__MODULE__, function_name, []) do
-          {:ok, response = %Response{}} -> response
-          response = %Response{} -> response
-          error -> raise FakeServer.Error, {:error, {error, "response must be a %FakeServer.Response{} structure"}}
+          {:ok, response = %Response{}} ->
+            response
+
+          response = %Response{} ->
+            response
+
+          error ->
+            raise FakeServer.Error,
+                  {:error, {error, "response must be a %FakeServer.Response{} structure"}}
         end
       end
 
       defp override_body_keys(original_body, keys) do
         case Poison.decode(original_body) do
           {:ok, decoded_body} ->
-            Enum.reduce(keys, decoded_body, fn({key, value}, body) ->
+            Enum.reduce(keys, decoded_body, fn {key, value}, body ->
               key = if is_atom(key), do: to_string(key), else: key
               override_body_key(body, key, value)
             end)
-          {:error, _} -> nil
+
+          {:error, _} ->
+            nil
         end
       end
 
       defp override_body_key(body, key, value) when is_nil(value), do: Map.delete(body, key)
+
       defp override_body_key(body, key, value) do
         if Map.has_key?(body, key), do: Map.put(body, key, value), else: body
       end
 
       defp override_headers(original_headers, new_headers) do
         new_headers
-        |> Enum.reduce(original_headers, fn({header, header_value}, result_headers) ->
+        |> Enum.reduce(original_headers, fn {header, header_value}, result_headers ->
           if is_nil(header_value) do
             Map.delete(result_headers, header)
           else
@@ -183,4 +194,3 @@ defmodule FakeServer.ResponseFactory do
     end
   end
 end
-

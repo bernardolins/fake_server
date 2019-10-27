@@ -9,17 +9,16 @@ defmodule FakeServer.Handlers.ListHandler do
   require Logger
 
   def init(req, state) do
-    with %Route{} = route         <- Keyword.get(state, :route, nil),
-         {:ok, access}            <- extract_access(state),
-         %Request{} = request     <- Request.from_cowboy_req(req),
-         :ok                      <- Access.compute_access(access, request),
-         %Response{} = response   <- execute_response(route)
-    do
+    with %Route{} = route <- Keyword.get(state, :route, nil),
+         {:ok, access} <- extract_access(state),
+         %Request{} = request <- Request.from_cowboy_req(req),
+         :ok <- Access.compute_access(access, request),
+         %Response{} = response <- execute_response(route) do
       req = :cowboy_req.reply(response.status, response.headers, response.body, req)
       {:ok, req, state}
     else
       error ->
-        Logger.error("An error occurred while executing the request: #{inspect error}")
+        Logger.error("An error occurred while executing the request: #{inspect(error)}")
         {:ok, req, state}
     end
   end
@@ -40,4 +39,3 @@ defmodule FakeServer.Handlers.ListHandler do
     end
   end
 end
-
