@@ -9,6 +9,7 @@ otp_release:
   - 21.3
   - 22.0
 script:
+  - mix format --check-formatted
   - mix coveralls.travis
 env:
   - MIX_ENV=test
