@@ -14,9 +14,14 @@ defmodule FakeServer.Port do
 
   def ensure(port) do
     cond do
-      not valid?(port)      -> {:error, {port, "port is not in allowed range: #{inspect @default_port_range}"}}
-      not available?(port)  -> {:error, {port, "port is already in use"}}
-      true                  -> {:ok, port}
+      not valid?(port) ->
+        {:error, {port, "port is not in allowed range: #{inspect(@default_port_range)}"}}
+
+      not available?(port) ->
+        {:error, {port, "port is already in use"}}
+
+      true ->
+        {:ok, port}
     end
   end
 
@@ -27,7 +32,8 @@ defmodule FakeServer.Port do
   end
 
   defp test_ports([]), do: nil
-  defp test_ports([port|port_list]) do
+
+  defp test_ports([port | port_list]) do
     if available?(port), do: port, else: test_ports(port_list)
   end
 
@@ -38,6 +44,7 @@ defmodule FakeServer.Port do
       {:ok, socket} ->
         :erlang.port_close(socket)
         true
+
       {:error, _} ->
         false
     end
