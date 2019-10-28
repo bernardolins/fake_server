@@ -82,6 +82,10 @@ defmodule MyTest do
   end
 end
 ```
+#### Setup Server
+
+If you need to do some setup before every `test_with_server` tests, you can define a `setup_test_with_server/1` function in your module. This function will receive a %FakeServer.Instance{} struct as a parameter.
+
 
 ### Standalone Server
 
@@ -97,8 +101,4 @@ iex> :ok = FakeServer.put_route(pid, "/say/hi", fn(_) -> IO.puts "HI!" end)
 iex> {:ok, port} = FakeServer.port(:my_server)
 {:ok, 62698}
 ```
-### Setup Server
-
-If you need to do some setup before every `test_with_server` tests, you can define a `setup_test_with_server/1` function in your module. This function will receive a %FakeServer.Instance{} struct as a parameter.
-
 For more examples you can see the [docs](https://hexdocs.pm/fake_server/api-reference.html).
