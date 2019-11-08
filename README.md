@@ -18,7 +18,7 @@ FakeServer is available on [Hex](https://hex.pm/packages/fake_server). First, ad
 ```elixir
 def deps do
   [
-    {:fake_server, "~> 2.0", only: :test}
+    {:fake_server, "~> 2.1", only: :test}
   ]
 end
 ```
