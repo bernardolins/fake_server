@@ -11,6 +11,13 @@ defmodule MyResponseFactory do
       %{"Content-Type" => "application/json"}
     )
   end
+
+  def plain_text_response do
+    ok(
+      "Hello World",
+      %{"Content-Type" => "text/plain"}
+    )
+  end
 end
 
 defmodule FakeServer.Integration.ResponseFactoryTest do
@@ -32,6 +39,13 @@ defmodule FakeServer.Integration.ResponseFactoryTest do
     assert person["email"] == body["email"]
     assert person["company"]["name"] == body["company"]["name"]
     assert person["company"]["country"] == body["company"]["country"]
+  end
+
+  test_with_server "basic factory usage with text" do
+    route("/plain", MyResponseFactory.build(:plain_text))
+    response = HTTPoison.get!(FakeServer.address() <> "/plain")
+
+    assert response.status_code == 200
   end
 
   test_with_server "setting custom attributes" do
